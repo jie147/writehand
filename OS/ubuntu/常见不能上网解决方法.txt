@@ -1,0 +1,14 @@
+如果在图形界面使用ctrl+alt+F1~6 能切换至命令界面
+首先使用 ifconfig 命令查看网络情况：
+①。有网卡但上不了网（lo 为系统内部网络）
+        有可能你设定了固定ip导致无法上网。用  vi 命令 进入 /etc/network/interfaces 
+        auto    ethX              （X一般为0~4，即网卡数）
+        iface    ethX    inet    dhcp
+我曾经遇见过   em1~4  这个没关系一样是网卡能正常使用，将ethX直接换成em（X+1）就行。
+
+②。如果ifconfig无法看见网卡信息，使用    ifconfig -a 查看一下网卡情况：
+        如果有就直接在 /etc/network/interfaces 的最后添加
+        auto    ethX              （X一般为0~4，即网卡数）
+        iface    ethX    inet    dhcp
+可能需要重启，可能有不用重启的方法不过没找见。。。
+一般服务器是不重启的，所以。。。。（个人能力不够，也没找见就只能重启了。。。）

@@ -1,0 +1,10 @@
+https://docs.mirantis.com/openstack/fuel/fuel-6.1/pdf/Mirantis-OpenStack-6.1-PlanningGuide.pdf
+https://docs.mirantis.com/openstack/fuel/fuel-6.1/pdf/Mirantis-OpenStack-6.1-UserGuide.pdf
+https://docs.mirantis.com/openstack/fuel/fuel-6.1/pdf/Mirantis-OpenStack-6.1-OperationsGuide.pdf
+https://docs.mirantis.com/openstack/fuel/fuel-6.1/pdf/Mirantis-OpenStack-6.1-MonitoringGuide.pdf
+https://docs.mirantis.com/openstack/fuel/fuel-6.1/pdf/Mirantis-OpenStack-6.1-Running-Mirantis-OpenStack-on-VirtualBox.pdf
+https://docs.mirantis.com/openstack/fuel/fuel-6.1/pdf/Mirantis-OpenStack-6.1-ReferenceArchitecture.pdf
+https://docs.mirantis.com/openstack/fuel/fuel-6.1/pdf/Mirantis-OpenStack-6.1-FuelPluginGuide.pdf
+https://docs.mirantis.com/openstack/fuel/fuel-6.1/pdf/Mirantis-OpenStack-6.1-Terminology-Reference.pdf
+https://docs.mirantis.com/openstack/fuel/fuel-6.1/pdf/Mirantis-OpenStack-6.1-File-Format-Reference.pdf
+https://docs.mirantis.com/openstack/fuel/fuel-6.1/pdf/Mirantis-OpenStack-6.1-RelNotes.pdf

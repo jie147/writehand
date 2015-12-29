@@ -1,0 +1,56 @@
+#!/bin/bash
+#program : using it to set the IP for docker contaiter
+#Made by : jie
+#data :2015/08/14
+#
+
+if [ ! -d "/var/run/netns" ]; then
+        mkdir /var/run/netns
+fi
+
+#for the master
+master_name=master
+declare -i master_ip
+master_ip=10+1
+
+docker start ${master_name}
+pid=$(docker inspect -f '{{.State.Pid}}' ${master_name})
+echo "master pid=$pid"
+ln -s /proc/$pid/ns/net /var/run/netns/$pid
+ip link add veth_${master_name}_b type veth peer name veth_${master_name}_c
+brctl addif docker0 veth_${master_name}_b
+ip link set veth_${master_name}_b up
+
+ip link set veth_${master_name}_c netns $pid
+ip netns exec $pid ip link set dev veth_${master_name}_c name eth0
+ip netns exec $pid ip link set eth0 address 12:34:56:78:9a:${master_ip}
+ip netns exec $pid ip link set eth0 up
+ip netns exec $pid ip addr add 172.17.42.${master_ip}/16 dev eth0
+ip netns exec $pid ip route add default via 172.17.42.1
+#end master set IP
+
+#for the slave
+declare -i slave_num slave_i
+slave_num=2
+for (( slave_i=1; $slave_i <= $slave_num; slave_i=$slave_i+1 ))
+do
+        slave_name="slave$slave_i"
+        declare -i slave_ip
+        slave_ip=30+$slave_i
+
+        docker start ${slave_name}
+        pid=$(docker inspect -f '{{.State.Pid}}' ${slave_name})
+        echo "$slave_name pid=$pid"
+        ln -s /proc/$pid/ns/net /var/run/netns/$pid
+        ip link add veth_${slave_name}_b type veth peer name veth_${slave_name}_c
+        brctl addif docker0 veth_${slave_name}_b
+        ip link set veth_${slave_name}_b up
+
+        ip link set veth_${slave_name}_c netns $pid
+        ip netns exec $pid ip link set dev veth_${slave_name}_c name eth0
+        ip netns exec $pid ip link set eth0 address 12:34:56:78:9a:${slave_ip}
+        ip netns exec $pid ip link set eth0 up
+        ip netns exec $pid ip addr add 172.17.42.${slave_ip}/16 dev eth0
+        ip netns exec $pid ip route add default via 172.17.42.1
+done
+#end slave set IP

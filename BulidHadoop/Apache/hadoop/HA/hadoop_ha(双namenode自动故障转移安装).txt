@@ -1,0 +1,2051 @@
+-- hadoop 版本：2.4.0
+-- 安装包名：   hadoop-2.4.0.tar.gz 或者源码版本 hadoop-2.4.0-src.tar.gz(我hadoop、hbase、hive均是用的源码编译安装)
+
+-- 安装参考：http://www.netfoucs.com/article/book_mmicky/79985.html
+             http://www.byywee.com/page/M0/S934/934356.html
+             http://www.itpub.net/thread-1631536-1-1.html
+             http://demo.netfoucs.com/u014393917/article/details/25913363
+
+-- 找不到本地库，参考：http://www.ercoppa.org/Linux-Compile-Hadoop-220-fix-Unable-to-load-native-hadoop-library.htm
+
+-- lzo支持，参考：http://blog.csdn.net/zhangzhaokun/article/details/17595325
+		  http://xubo8118.blog.163.com/blog/static/1855523322013112344212380/ (OK)
+                  http://slaytanic.blog.51cto.com/2057708/1162287/
+                  http://hi.baidu.com/qingchunranzhi/item/3662ed5ed29d37a1adc85709
+
+-- hadoop-lzo install
+-- 参考：http://blog.csdn.net/zhangzhaokun/article/details/17595325
+
+d；安装完毕，将/usr/local/hadoop/lzo/lib/*	复制到/usr/lib/和/usr/lib64/下
+e；配置环境变量(vim /etc/bashrc)：export PATH=/usr/local/lzo/:$PATH
+
+-- lzop
+export C_INCLUDE_PATH=/usr/local/hadoop/lzo/include 
+export LIBRARY_PATH=/usr/local/hadoop/lzo/lib 
+./configure -enable-shared -prefix=/usr/local/hadoop/lzop
+make  && make install
+
+（3）把lzop复制到/usr/bin/
+    ln -s /usr/local/hadoop/lzop/bin/lzop /usr/bin/lzop
+
+
+cd /data/software/hadoop-lzo
+svn co https://github.com/twitter/hadoop-lzo/trunk hadoop-lzo-trunk
+-- svn co https://github.com/twitter/hadoop-lzo/tree/master hadoop-lzo-trunk
+chown -R hadoop.hadoop ./hadoop-lzo-trunk
+su - hadoop
+cd /data/software/hadoop-lzo/hadoop-lzo-trunk
+vi pom.xml
+export C_INCLUDE_PATH=/usr/local/lzo/include
+export LIBRARY_PATH=/usr/local/lzo/lib 
+mvn clean package -DskipTests
+
+-- c；编译完成，在target下生成文件，将这些文件复制到相应的地方
+cp target/hadoop-lzo-0.4.20-SNAPSHOT*.jar /usr/local/hadoop/lib/
+
+tar -cBf - -C target/native/Linux-amd64-64/lib . | tar -xBvf - -C /usr/local/hadoop-2.4.1/lib/native/   
+
+
+-- d；将target下的文件复制到各节点相应路径
+scp -P5044 -r /usr/local/hadoop/lib/* hadoop@funshion-hadoop203:/usr/local/hadoop/lib/
+scp ./hadoop-lzo-0.4.20-SNAPSHOT.jar hadoop@funshion-hadoop203:/usr/local/hadoop/share/hadoop/common/
+
+export C_INCLUDE_PATH=/usr/local/lzo/include/
+cd /data/software/lzop-1.03
+
+
+-- 相关URL：
+http://funshion-hadoop194:23188/cluster
+
+This is stadby RM. Redirecting to the current active RM
+
+-- hadoop源码编译，参考：http://www.aboutyun.com/thread-7512-1-1.html
+
+mvn package -Pdist,native,docs -DskipTests -Dtar
+
+-- 安装以下RPM包：
+yum -y install openssh*
+yum -y install man*
+yum -y install compat-libstdc++-33*
+yum -y install libaio-0.*
+yum -y install libaio-devel*
+yum -y install sysstat-9.*
+yum -y install glibc-2.*
+yum -y install glibc-devel-2.* glibc-headers-2.*
+yum -y install ksh-2*
+yum -y install libgcc-4.*
+yum -y install libstdc++-4.*
+yum -y install libstdc++-4.*.i686*
+yum -y install libstdc++-devel-4.*
+yum -y install gcc-4.*x86_64*
+yum -y install gcc-c++-4.*x86_64*
+yum -y install elfutils-libelf-0*x86_64* elfutils-libelf-devel-0*x86_64*
+yum -y install elfutils-libelf-0*i686* elfutils-libelf-devel-0*i686*
+yum -y install libtool-ltdl*i686*
+yum -y install ncurses*i686*
+yum -y install ncurses*
+yum -y install readline*
+yum -y install unixODBC*
+yum -y install zlib
+yum -y install zlib*
+yum -y install openssl*
+yum -y install patch
+yum -y install git
+yum -y -y install  lzo-devel zlib-devel gcc autoconf automake libtool
+yum -y install lzop
+yum -y install lrzsz
+yum -y -y install  lzo-devel  zlib-devel  gcc autoconf automake libtool
+yum -y install nc
+yum -y install glibc
+yum -y install java-1.7.0-openjdk
+yum -y install gzip
+yum -y install zlib
+yum -y install gcc
+yum -y install gcc-c++
+yum -y install make
+yum -y install protobuf
+yum -y install protoc
+yum -y install cmake
+yum -y install openssl-devel
+yum -y install ncurses-devel
+yum -y install unzip
+yum -y install telnet
+yum -y install telnet-server
+yum -y install wget
+yum -y install svn
+yum -y install ntpdate
+
+
+-- hive 安装，参考：http://kicklinux.com/hive-deploy/
+
+-- ################################################################################## --
+-- 总共5台服务器，如下：
+------------------------------------------------------------------------------------------------------------------
+|      IP地址      |       主机名       | NameNode | JournalNode | DataNode | Zookeeper | Hbase     | Hive       |       
+------------------------------------------------------------------------------------------------------------------
+| 192.168.117.194  | funshion-hadoop194 | 是       | 是          | 否       | 是        | 是        | 否         |
+------------------------------------------------------------------------------------------------------------------
+| 192.168.117.195  | funshion-hadoop195 | 是       | 是          | 否       | 是        | 是        | 否         |
+------------------------------------------------------------------------------------------------------------------
+| 192.168.117.196  | funshion-hadoop196 | 否       | 是          | 是       | 是        | 是(Master)| 是(Mysql)  |
+------------------------------------------------------------------------------------------------------------------
+| 192.168.117.197  | funshion-hadoop197 | 否       | 是          | 是       | 是        | 是        | 否         |
+------------------------------------------------------------------------------------------------------------------
+| 192.168.117.198  | funshion-hadoop198 | 否       | 是          | 是       | 是        | 是        | 否         |
+------------------------------------------------------------------------------------------------------------------
+
+-- ################################################################################## --
+----------------------------------------------------------------------------------------
+-- Step 1. 配置Linux、安装JDK
+
+-- 略
+
+-- ################################################################################## --
+----------------------------------------------------------------------------------------
+-- Step 1. 建立用户hadoop的ssh无密码登陆
+
+-- 略
+
+-- ################################################################################## --
+----------------------------------------------------------------------------------------
+-- Step 2. zookeeper配置(配置奇数台zk集群，我用的5台)
+
+-- 略
+
+-- ################################################################################## --
+----------------------------------------------------------------------------------------
+-- Step 3. Hadoop集群配置：
+-- Step 3.1 vi $HADOOP_HOME/etc/hadoop/slaves
+
+funshion-hadoop196
+funshion-hadoop197
+funshion-hadoop198
+
+----------------------------------------------------------------------------------------
+-- Step 3.2 vi $HADOOP_HOME/etc/hadoop/hadoop-env.sh  (添加 JAVA_HOME 环境变量、本地library库)
+
+export JAVA_HOME=/usr/java/latest
+
+export LD_LIBRARY_PATH=/usr/local/hadoop/lzo/lib
+
+export HADOOP_COMMON_LIB_NATIVE_DIR=${HADOOP_PREFIX}/lib/native
+export HADOOP_OPTS="-Djava.library.path=$HADOOP_PREFIX/lib/native"
+
+
+-- 注意：${HADOOP_PREFIX}/lib/native 下的内容如下：
+[hadoop@funshion-hadoop194 native]$ pwd
+/usr/local/hadoop/lib/native
+[hadoop@funshion-hadoop194 native]$ ls -l
+total 8640
+-rw-r--r--. 1 hadoop hadoop 2850660 Jun  9 14:58 hadoop-common-2.4.0.jar
+-rw-r--r--. 1 hadoop hadoop 1509888 Jun  9 14:58 hadoop-common-2.4.0-tests.jar
+-rw-r--r--. 1 hadoop hadoop  178637 Jun  9 14:58 hadoop-lzo-0.4.20-SNAPSHOT.jar
+-rw-r--r--. 1 hadoop hadoop  145385 Jun  9 14:58 hadoop-nfs-2.4.0.jar
+-rw-r--r--. 1 hadoop hadoop  983042 Jun  6 19:36 libhadoop.a
+-rw-r--r--. 1 hadoop hadoop 1487284 Jun  6 19:36 libhadooppipes.a
+lrwxrwxrwx. 1 hadoop hadoop      18 Jun  6 19:42 libhadoop.so -> libhadoop.so.1.0.0
+-rwxr-xr-x. 1 hadoop hadoop  586664 Jun  6 19:36 libhadoop.so.1.0.0
+-rw-r--r--. 1 hadoop hadoop  582040 Jun  6 19:36 libhadooputils.a
+-rw-r--r--. 1 hadoop hadoop  298178 Jun  6 19:36 libhdfs.a
+lrwxrwxrwx. 1 hadoop hadoop      16 Jun  6 19:42 libhdfs.so -> libhdfs.so.0.0.0
+-rwxr-xr-x. 1 hadoop hadoop  200026 Jun  6 19:36 libhdfs.so.0.0.0
+drwxrwxr-x. 2 hadoop hadoop    4096 Jun  6 20:37 Linux-amd64-64
+
+----------------------------------------------------------------------------------------
+-- Step 3.3 vi $HADOOP_HOME/etc/hadoop/core-site.xml
+-- (注意：fs.default.FS参数在两个namenode节点均一样，即5台机器的core-site.xml文件内容完全一样)
+
+<configuration>
+        <property>
+                <name>fs.defaultFS</name>
+                <value>hdfs://mycluster</value>
+        </property>
+        <property>
+                <name>dfs.ha.fencing.methods</name>
+                <value>sshfence</value>
+        </property>
+        <property>
+                <name>dfs.ha.fencing.ssh.private-key-files</name>
+                <value>/home/hadoop/.ssh/id_rsa_nn2</value>
+        </property>
+        <property>
+                <name>ha.zookeeper.quorum</name>
+                <value>funshion-hadoop194:2181,funshion-hadoop195:2181,funshion-hadoop196:2181,funshion-hadoop197:2181,funshion-hadoop198:2181</value>
+        </property>
+
+        <property>
+                <name>io.compression.codecs</name>
+                <value>org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.DefaultCodec,com.hadoop.compression.lzo.LzoCodec,com.hadoop.compression.lzo.LzopCodec,org.apache.hadoop.io.compress.BZip2Codec</value>
+        </property>
+        <property>
+                <name>io.compression.codec.lzo.class</name>
+                <value>com.hadoop.compression.lzo.LzoCodec</value>
+        </property>
+        <property>
+                <name>io.file.buffer.size</name>
+                <value>131072</value>
+        </property>
+        <property>
+                <name>hadoop.tmp.dir</name>
+                <value>/home/hadoop/tmp</value>
+                <description>Abase for other temporary directories.</description>
+        </property>
+        <property>
+                <name>hadoop.proxyuser.hadoop.hosts</name>
+                <value>*</value>
+        </property>
+        <property>
+                <name>hadoop.proxyuser.hadoop.groups</name>
+                <value>*</value>
+        </property>
+        <property>
+                <name>hadoop.native.lib</name>
+                <value>true</value>
+        </property>
+        <property>
+                <name>ha.zookeeper.session-timeout.ms</name>
+                <value>5000</value>
+                <description>ms</description>
+        </property>
+	<property>
+		<name>ha.failover-controller.cli-check.rpc-timeout.ms</name>
+		<value>20000</value>
+	</property>
+	<property>
+		<name>ipc.client.connect.timeout</name>
+		<value>20000</value>
+	</property>
+</configuration>
+
+
+-- 注意：属性值dfs.ha.fencing.ssh.private-key-files的值id_rsa_nn2　是privatekey（即/home/hadoop/.ssh/目录id_rsa文件的拷贝，且权限为600）
+        <property>
+                <name>dfs.ha.fencing.ssh.private-key-files</name>
+                <value>/home/hadoop/.ssh/id_rsa_nn2</value>
+        </property>
+
+----------------------------------------------------------------------------------------
+-- Step 3.4 vi $HADOOP_HOME/etc/hadoop/hdfs-site.xml
+
+<configuration>
+        <property>
+                <name>dfs.nameservices</name>
+                <value>mycluster</value>
+        </property>
+        <property>
+                <name>dfs.ha.namenodes.mycluster</name>
+                <value>nn1,nn2</value>
+        </property>
+        <property>
+                <name>dfs.ha.namenode.id</name>
+                <value>nn1</value>
+        </property>
+        <property>
+                <name>dfs.namenode.rpc-address.mycluster.nn1</name>
+                <value>funshion-hadoop194:8020</value>
+        </property>
+        <property>
+                <name>dfs.namenode.rpc-address.mycluster.nn2</name>
+                <value>funshion-hadoop195:8020</value>
+        </property>
+        <property>
+                <name>dfs.namenode.servicerpc-address.mycluster.nn1</name>
+                <value>funshion-hadoop194:53310</value>
+        </property>
+        <property>
+                <name>dfs.namenode.servicerpc-address.mycluster.nn2</name>
+                <value>funshion-hadoop195:53310</value>
+        </property>
+        <property>
+                <name>dfs.namenode.http-address.mycluster.nn1</name>
+                <value>funshion-hadoop194:50070</value>
+        </property>
+        <property>
+                <name>dfs.namenode.http-address.mycluster.nn2</name>
+                <value>funshion-hadoop195:50070</value>
+        </property>
+        <property>
+                <name>dfs.namenode.shared.edits.dir</name>
+                <value>qjournal://funshion-hadoop194:8485;funshion-hadoop195:8485;funshion-hadoop196:8485;funshion-hadoop197:8485;funshion-hadoop198:8485/mycluster</value>
+        </property>
+        <property>
+                <name>dfs.journalnode.edits.dir</name>
+                <value>/home/hadoop/mydata/journal</value>
+        </property>
+        <property>
+                <name>dfs.client.failover.proxy.provider.mycluster</name>
+                <value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value>
+        </property>
+        <property>
+                <name>dfs.ha.automatic-failover.enabled</name>
+                <value>true</value>
+        </property>
+
+        <property>
+                <name>dfs.namenode.name.dir</name>
+                <value>file:///home/hadoop/mydata/name</value>
+		<description>如果该属性设置为多路径冗余的话，个人感觉应该将属性dfs.namenode.name.dir.restore设置为true</description>
+        </property>
+
+        <property>
+                <name>dfs.namenode.name.dir.restore</name>
+                <value>false</value>
+		<description>默认值为false
+			     Set to true to enable NameNode to attempt recovering a previously failed dfs.namenode.name.dir.
+			     When enabled, a recovery of any failed directory is attempted during checkpoint.
+		</description>
+        </property>
+
+        <property>
+                <name>dfs.datanode.data.dir</name>
+                <value>file:///home/hadoop/mydata/data</value>
+        </property>
+        <property>
+                <name>dfs.replication</name>
+                <value>2</value>
+        </property>
+	<property>
+		<name>dfs.image.transfer.bandwidthPerSec</name>
+		<value>1048576</value>
+	</property>
+</configuration>
+
+----------------------------------------------------------------------------------------
+-- Step 3.5 vi $HADOOP_HOME/etc/hadoop/mapred-site.xml
+
+<configuration>
+        <property>
+                <name>mapreduce.jobhistory.address</name>
+                <value>funshion-hadoop194:10020</value>
+        </property>
+        <property>
+                <name>mapreduce.jobhistory.webapp.address</name>
+                <value>funshion-hadoop194:19888</value>
+        </property>
+        <property>
+                <name>mapreduce.map.output.compress</name>
+                <value>true</value>
+        </property>
+        <property>
+                <name>mapreduce.map.output.compress.codec</name>
+                <value>com.hadoop.compression.lzo.LzoCodec</value>
+        </property>
+        <property>
+                <name>mapred.child.env</name>
+                <value>LD_LIBRARY_PATH=/usr/local/hadoop/lib/native</value>
+        </property>
+        <property>
+                <name>mapred.child.java.opts</name>
+                <value>-Xmx2048m</value>
+        </property>
+        <property>
+                <name>mapred.reduce.child.java.opts</name>
+                <value>-Xmx2048m</value>
+        </property>
+        <property>
+                <name>mapred.map.child.java.opts</name>
+                <value>-Xmx2048m</value>
+        </property>
+	<property>
+		<name>mapred.remote.os</name>
+		<value>Linux</value>
+		<description>Remote MapReduce framework's OS, can be either Linux or Windows</description>
+	</property>
+</configuration>
+
+-- 注意：1、以mapred.开头的形式去指定属性名，都是一种过时的形式，建议使用mapreduce.
+            比如：mapred.compress.map.output 属性应该对应修改成：mapreduce.map.output.compress
+            具体可以查阅：http://hadoop.apache.org/docs/r2.4.0/hadoop-mapreduce-client/hadoop-mapreduce-client-core/mapred-default.xml 文件，
+　　　　　　当然，好像还有少量属性名是没有修改的，比如：mapred.child.java.opts、mapred.child.env
+
+-- 注意：/usr/local/hadoop/lib/native 目录下有如下内容：
+[hadoop@funshion-hadoop194 sbin]$ ls -l /usr/local/hadoop/lib/native
+total 12732
+-rw-r--r-- 1 hadoop hadoop 2850900 Jun 20 19:22 hadoop-common-2.4.0.jar
+-rw-r--r-- 1 hadoop hadoop 1509411 Jun 20 19:22 hadoop-common-2.4.0-tests.jar
+-rw-r--r-- 1 hadoop hadoop  178559 Jun 20 18:38 hadoop-lzo-0.4.20-SNAPSHOT.jar
+-rw-r--r-- 1 hadoop hadoop 1407039 Jun 20 19:25 hadoop-yarn-common-2.4.0.jar
+-rw-r--r-- 1 hadoop hadoop  106198 Jun 20 18:37 libgplcompression.a
+-rw-r--r-- 1 hadoop hadoop    1124 Jun 20 18:37 libgplcompression.la
+-rwxr-xr-x 1 hadoop hadoop   69347 Jun 20 18:37 libgplcompression.so
+-rwxr-xr-x 1 hadoop hadoop   69347 Jun 20 18:37 libgplcompression.so.0
+-rwxr-xr-x 1 hadoop hadoop   69347 Jun 20 18:37 libgplcompression.so.0.0.0
+-rw-r--r-- 1 hadoop hadoop  983042 Jun 20 18:10 libhadoop.a
+-rw-r--r-- 1 hadoop hadoop 1487284 Jun 20 18:10 libhadooppipes.a
+lrwxrwxrwx 1 hadoop hadoop      18 Jun 20 18:27 libhadoop.so -> libhadoop.so.1.0.0
+-rwxr-xr-x 1 hadoop hadoop  586664 Jun 20 18:10 libhadoop.so.1.0.0
+-rw-r--r-- 1 hadoop hadoop  582040 Jun 20 18:10 libhadooputils.a
+-rw-r--r-- 1 hadoop hadoop  298178 Jun 20 18:10 libhdfs.a
+lrwxrwxrwx 1 hadoop hadoop      16 Jun 20 18:27 libhdfs.so -> libhdfs.so.0.0.0
+-rwxr-xr-x 1 hadoop hadoop  200026 Jun 20 18:10 libhdfs.so.0.0.0
+-rw-r--r-- 1 hadoop hadoop  906318 Jun 20 19:17 liblzo2.a
+-rwxr-xr-x 1 hadoop hadoop     929 Jun 20 19:17 liblzo2.la
+-rwxr-xr-x 1 hadoop hadoop  562376 Jun 20 19:17 liblzo2.so
+-rwxr-xr-x 1 hadoop hadoop  562376 Jun 20 19:17 liblzo2.so.2
+-rwxr-xr-x 1 hadoop hadoop  562376 Jun 20 19:17 liblzo2.so.2.0.0
+
+----------------------------------------------------------------------------------------
+-- Step 3.6 vi $HADOOP_HOME/etc/hadoop/yarn-site.xml
+
+<configuration>
+        <property>
+                <name>yarn.resourcemanager.connect.retry-interval.ms</name>
+                <value>60000</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.ha.enabled</name>
+                <value>true</value>
+		<description>Enable RM high-availability. When enabled, 
+			    (1) The RM starts in the Standby mode by default, and transitions to the Active mode when prompted to. 
+			    (2) The nodes in the RM ensemble are listed in yarn.resourcemanager.ha.rm-ids 
+			    (3) The id of each RM either comes from yarn.resourcemanager.ha.id 
+			        if yarn.resourcemanager.ha.id is explicitly specified or can be figured out by 
+				matching yarn.resourcemanager.address.{id} with local address
+			    (4) The actual physical addresses come from the configs of the pattern - {rpc-config}.{id}
+		</description>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.ha.automatic-failover.enabled</name>
+                <value>true</value>
+		<description>Enable automatic failover. By default, it is enabled only when HA is enabled</description>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.ha.automatic-failover.embedded</name>
+                <value>true</value>
+		<description>Enable embedded automatic failover. By default, it is enabled only when HA is enabled. 
+			     The embedded elector relies on the RM state store to handle fencing, 
+			     and is primarily intended to be used in conjunction with ZKRMStateStore.
+		</description>
+        </property>
+
+        <property>
+                <name>yarn.resourcemanager.cluster-id</name>
+                <value>fxrm-cluster</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.ha.rm-ids</name>
+                <value>fxrm1,fxrm2</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.ha.id</name>
+                <value>fxrm1</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.hostname.fxrm1</name>
+                <value>funshion-hadoop194</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.hostname.fxrm2</name>
+                <value>funshion-hadoop195</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.recovery.enabled</name>
+                <value>true</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.store.class</name>
+                <value>org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore</value>
+        </property>
+	<property>
+		<name>yarn.resourcemanager.zk-state-store.parent-path</name>
+		<value>/usr/local/zookeeper/var/data/fxrmstore</value>
+		<description>Full path of the ZooKeeper znode where RM state will be stored. 
+			     This must be supplied when using org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore
+			     as the value for yarn.resourcemanager.store.class
+			     如果参数yarn.resourcemanager.store.class指定值为
+			     org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore
+			     那么这个参数必须设置，默认值为/rmstore
+		</description>
+	</property>
+
+	<property>
+		<name>yarn.resourcemanager.zk-state-store.parent-path</name>
+		<value>/usr/local/zookeeper/var/data/rmstore</value>
+		<description>Full path of the ZooKeeper znode where RM state will be stored. 
+			     This must be supplied when using org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore
+			     as the value for yarn.resourcemanager.store.class
+		</description>
+	</property>
+
+
+        <property>
+                <name>yarn.resourcemanager.zk-address</name>
+                <value>funshion-hadoop194:2181,funshion-hadoop195:2181,funshion-hadoop196:2181,funshion-hadoop197:2181,funshion-hadoop198:2181</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.address.fxrm1</name>
+                <value>${yarn.resourcemanager.hostname.rm1}:23140</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.scheduler.address.fxrm1</name>
+                <value>${yarn.resourcemanager.hostname.rm1}:23130</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.webapp.https.address.fxrm1</name>
+                <value>${yarn.resourcemanager.hostname.rm1}:23189</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.webapp.address.fxrm1</name>
+                <value>${yarn.resourcemanager.hostname.rm1}:23188</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.resource-tracker.address.fxrm1</name>
+                <value>${yarn.resourcemanager.hostname.rm1}:23125</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.admin.address.fxrm1</name>
+                <value>${yarn.resourcemanager.hostname.rm1}:23141</value>
+        </property>
+
+        <property>
+                <name>yarn.resourcemanager.address.fxrm2</name>
+                <value>${yarn.resourcemanager.hostname.rm2}:23140</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.scheduler.address.fxrm2</name>
+                <value>${yarn.resourcemanager.hostname.rm2}:23130</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.webapp.https.address.fxrm2</name>
+                <value>${yarn.resourcemanager.hostname.rm2}:23189</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.webapp.address.fxrm2</name>
+                <value>${yarn.resourcemanager.hostname.rm2}:23188</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.resource-tracker.address.fxrm2</name>
+                <value>${yarn.resourcemanager.hostname.rm2}:23125</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.admin.address.fxrm2</name>
+                <value>${yarn.resourcemanager.hostname.rm2}:23141</value>
+        </property>
+
+        <property>
+                <name>yarn.resourcemanager.scheduler.class</name>
+                <value>org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler</value>
+        </property>
+        <property>
+                <name>yarn.scheduler.fair.allocation.file</name>
+                <value>${yarn.home.dir}/etc/hadoop/fairscheduler.xml</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.local-dirs</name>
+                <value>/home/hadoop/logs/yarn_local</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.log-dirs</name>
+                <value>/home/hadoop/logs/yarn_log</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.remote-app-log-dir</name>
+                <value>/home/hadoop/logs/yarn_remotelog</value>
+        </property>
+        <property>
+                <name>yarn.app.mapreduce.am.staging-dir</name>
+                <value>/home/hadoop/logs/yarn_userstag</value>
+        </property>
+        <property>
+                <name>mapreduce.jobhistory.intermediate-done-dir</name>
+                <value>/home/hadoop/logs/yarn_intermediatedone</value>
+        </property>
+        <property>
+                <name>mapreduce.jobhistory.done-dir</name>
+                <value>/home/hadoop/logs/dfs/yarn_done</value>
+        </property>
+
+        <property>
+                <name>yarn.log-aggregation-enable</name>
+                <value>true</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.resource.memory-mb</name>
+                <value>2048</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.vmem-pmem-ratio</name>
+                <value>4.2</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.resource.cpu-vcores</name>
+                <value>2</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.aux-services</name>
+                <value>mapreduce_shuffle</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+                <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+        </property>
+        <property>
+                <name>yarn.application.classpath</name>
+                <value>
+                        $HADOOP_HOME/etc/hadoop,
+                        $HADOOP_HOME/share/hadoop/common/*,
+                        $HADOOP_HOME/share/hadoop/common/lib/*,
+                        $HADOOP_HOME/share/hadoop/hdfs/*,
+                        $HADOOP_HOME/share/hadoop/hdfs/lib/*,
+                        $HADOOP_HOME/share/hadoop/mapreduce/*,
+                        $HADOOP_HOME/share/hadoop/mapreduce/lib/*,
+                        $HADOOP_HOME/share/hadoop/yarn/*,
+                        $HADOOP_HOME/share/hadoop/yarn/lib/*
+                </value>
+                <description>Classpath for typical applications.</description>
+        </property>
+</configuration>
+
+
+-- 注意：两个namenode，funshion-hadoop194直接用上面的配置，
+--       funshion-hadoop195的话，只需修改一个地方：修改yarn.resourcemanager.ha.id 属性值为 rm2 
+
+----------------------------------------------------------------------------------------
+-- Step 3.7 vi $HADOOP_HOME/etc/hadoop/fairscheduler.xml
+
+<?xml version="1.0"?>
+<allocations>
+        <queue name="news">
+                <minResources>1024 mb, 1 vcores </minResources>
+                <maxResources>1536 mb, 1 vcores </maxResources>
+                <maxRunningApps>5</maxRunningApps>
+                <minSharePreemptionTimeout>300</minSharePreemptionTimeout>
+                <weight>1.0</weight>
+                <aclSubmitApps>root,yarn,search,hdfs</aclSubmitApps>
+        </queue>
+        <queue name="crawler">
+                <minResources>1024 mb, 1 vcores</minResources>
+                <maxResources>1536 mb, 1 vcores</maxResources>
+        </queue>
+        <queue name="map">
+                <minResources>1024 mb, 1 vcores</minResources>
+                <maxResources>1536 mb, 1 vcores</maxResources>
+        </queue>
+</allocations>
+
+-- ################################################################################## --
+
+-- 
+scp -r /usr/local/hadoop/etc/hadoop/* hadoop@funshion-hadoop195:/usr/local/hadoop/etc/hadoop/
+scp -r /usr/local/hadoop/etc/hadoop/* hadoop@funshion-hadoop196:/usr/local/hadoop/etc/hadoop/
+scp -r /usr/local/hadoop/etc/hadoop/* hadoop@funshion-hadoop197:/usr/local/hadoop/etc/hadoop/
+scp -r /usr/local/hadoop/etc/hadoop/* hadoop@funshion-hadoop198:/usr/local/hadoop/etc/hadoop/
+
+
+----------------------------------------------------------------------------------------
+
+-- Step 4. 创建相关目录
+
+mkdir ~/logs
+mkdir ~/mydata
+
+-- 备注：mydate目录下的相关子目录会自动生成，不需要创建。
+
+-- 在每台集群机器上创建如上两个目录，并同步 $HADOOP_HOME/etc/hadoop目录下的所有文件到各节点
+
+-- ################################################################################## --
+----------------------------------------------------------------------------------------
+
+-- Step 5. 启动Zookeeper、JournalNode、格式化Hadoop集群并启动
+-- Step 5.1 启动Zooker (ZK集群是funshion-hadoop194、funshion-hadoop195、funshion-hadoop196、funshion-hadoop197、funshion-hadoop198 五台服务器)
+[hadoop@funshion-hadoop194 bin]$ /usr/local/zookeeper/bin/zkServer.sh start
+[hadoop@funshion-hadoop195 bin]$ /usr/local/zookeeper/bin/zkServer.sh start
+[hadoop@funshion-hadoop196 bin]$ /usr/local/zookeeper/bin/zkServer.sh start
+[hadoop@funshion-hadoop197 bin]$ /usr/local/zookeeper/bin/zkServer.sh start
+[hadoop@funshion-hadoop198 bin]$ /usr/local/zookeeper/bin/zkServer.sh start
+
+-- 可以如下查看Zookeeper集群各节点的状态：
+/usr/local/zookeeper/bin/zkServer.sh status
+
+-- 然后在某一个namenode节点执行如下命令，创建命名空间
+[hadoop@funshion-hadoop194 bin]$ cd $HADOOP_HOME
+[hadoop@funshion-hadoop194 hadoop]$ ./bin/hdfs zkfc -formatZK
+
+-- 备注：停止zookeeper相关命令类似如下：
+/usr/local/zookeeper/bin/zkServer.sh stop
+/usr/local/zookeeper/bin/zkServer.sh restart
+
+/usr/local/zookeeper/bin/zkServer.sh status
+----------------------------------------------------------------------------------------
+-- Step 5.2 启动JournalNode进程(在funshion-hadoop194、funshion-hadoop195、funshion-hadoop196、funshion-hadoop197、funshion-hadoop198五台服务器上分别执行)：
+[hadoop@funshion-hadoop194 bin]$ $HADOOP_HOME/sbin/hadoop-daemon.sh start journalnode
+[hadoop@funshion-hadoop195 bin]$ $HADOOP_HOME/sbin/hadoop-daemon.sh start journalnode
+[hadoop@funshion-hadoop196 bin]$ $HADOOP_HOME/sbin/hadoop-daemon.sh start journalnode
+[hadoop@funshion-hadoop197 bin]$ $HADOOP_HOME/sbin/hadoop-daemon.sh start journalnode
+[hadoop@funshion-hadoop198 bin]$ $HADOOP_HOME/sbin/hadoop-daemon.sh start journalnode
+
+-- Step 5.3 格式化Hadoop集群并启动：
+-- 在 funshion-hadoop194 上执行：
+[hadoop@funshion-hadoop194 bin]$ $HADOOP_HOME/bin/hdfs namenode -format mycluster
+[hadoop@funshion-hadoop194 bin]$ $HADOOP_HOME/sbin/hadoop-daemon.sh start namenode
+
+-- 上步执行完后，在 funshion-hadoop195 上执行：
+[hadoop@funshion-hadoop195 bin]$ $HADOOP_HOME/bin/hdfs namenode -bootstrapStandby
+[hadoop@funshion-hadoop195 bin]$ $HADOOP_HOME/sbin/hadoop-daemon.sh start namenode
+
+-- 上步执行完后，可以继续在某个 namenode 执行 $HADOOP_HOME/sbin/start-all.sh 启动datanode及yarn相关进程。
+
+-- 因为是配置的自动故障转移，所以不能手工切换namenode的active和stadby角色。
+
+-- 可以通过haadmin查看每个Service的角色状态：
+
+[hadoop@funshion-hadoop194 lab]$ $HADOOP_HOME/bin/hdfs haadmin -getServiceState nn1
+standby
+[hadoop@funshion-hadoop194 lab]$ $HADOOP_HOME/bin/hdfs haadmin -getServiceState nn2
+active
+[hadoop@funshion-hadoop194 lab]$
+
+-- 通过hdfs-site.xml中的如下配置，我们知道nn1是在 funshion-hadoop194上的namenode服务，nn2是funshion-hadoop195上的namenode服务
+
+        <property>
+                <name>dfs.namenode.rpc-address.mycluster.nn1</name>
+                <value>funshion-hadoop194:8020</value>
+        </property>
+        <property>
+                <name>dfs.namenode.rpc-address.mycluster.nn2</name>
+                <value>funshion-hadoop195:8020</value>
+        </property>
+
+
+-- 所以，我们可以尝试 kill 掉 nn2(状态为active的namenode进程，然后去查看nn1的角色是否改变：
+[hadoop@funshion-hadoop195 bin]$ jps
+3199 JournalNode
+3001 NameNode
+1161 QuorumPeerMain
+3364 DFSZKFailoverController
+4367 Jps
+[hadoop@funshion-hadoop195 bin]$ kill -9 3001
+[hadoop@funshion-hadoop195 bin]$ jps
+3199 JournalNode
+1161 QuorumPeerMain
+3364 DFSZKFailoverController
+4381 Jps
+[hadoop@funshion-hadoop195 bin]$ $HADOOP_HOME/bin/hdfs haadmin -getServiceState nn1
+active
+[hadoop@funshion-hadoop195 bin]$ $HADOOP_HOME/sbin/hadoop-daemon.sh start namenode
+starting namenode, logging to /usr/local/hadoop/logs/hadoop-hadoop-namenode-funshion-hadoop195.out
+[hadoop@funshion-hadoop195 bin]$ $HADOOP_HOME/bin/hdfs haadmin -getServiceState nn1
+active
+[hadoop@funshion-hadoop195 bin]$ $HADOOP_HOME/bin/hdfs haadmin -getServiceState nn2
+standby
+
+-- 甚至可以直接reboot状态为active的namenode节点(执行操作系统的重启动作，看另一个standby状态的namenode节点是否能正常转换成acitve状态
+-- 甚至可以在有作业运行的时候去执行reboot操作系统(namenode的active节点执行)以测试双节点故障转移是否确实健壮
+
+-- 集群相关网页：
+-- http://funshion-hadoop194:50070/dfshealth.html#tab-overview
+
+-- ################################################################################## --
+-- Step 6. 上传测试数据：
+
+----------------------------------------------------------------------------------------
+-- Step 6.1 安装wget包、创建相关目录及shell上传数据脚本：
+[root@funshion-hadoop194 ~]# yum -y install wget
+[hadoop@funshion-hadoop194 ~]$ 
+[hadoop@funshion-hadoop194 ~]$ mkdir -p /home/hadoop/datateam/ghh/lab
+[hadoop@funshion-hadoop194 ~]$ mkdir -p /home/hadoop/log_catch/down
+[hadoop@funshion-hadoop194 ~]$ mkdir -p /home/hadoop/log_catch/put
+[hadoop@funshion-hadoop194 ~]$ mkdir -p /home/hadoop/log_catch/zip
+[hadoop@funshion-hadoop194 ~]$ vi /home/hadoop/datateam/ghh/lab/log_catch_hour_lzo.sh
+
+#!/bin/bash
+
+function f_show_info()
+{
+        printf "%20s = %s\n" "$1" "$2"
+        return 0
+}
+
+function f_catch_all_day_log()
+{
+        local str_date=""
+        local year=""
+        local month=""
+        local day=""
+
+        for(( str_date=${g_start_date};${str_date}<=${g_end_date}; str_date=$(date -d "+1 day ${str_date}" +%Y%m%d ) ))
+        do
+                year=$(date -d "${str_date}" +%Y )
+                month=$(date -d "${str_date}" +%m )
+                day=$(date -d "${str_date}" +%d )
+                f_catch_all_log ${year} ${month} ${day}
+        done
+}
+
+function f_catch_all_log()
+{
+        local year="$1"
+        local month="$2"
+        local day="$3"
+        local hour=""
+        local date_hour=""
+        local date_dir=""
+        local hdfs_dir=""
+        local g_hdfs_dir=""
+        local hdfs_file=""
+        local url=""
+        local i=0
+        local nRet=0
+
+        for(( i=${g_start_hour};i<=${g_end_hour};i++ ));
+        do
+                hour=$(printf "%02d" "$i")
+                date_hour="${year}${month}${day}${hour}"
+                date_dir="${year}/${month}/${day}"
+                hdfs_dir="${year}/${month}/${day}/${hour}"
+                g_hdfs_dir="${g_hdfs_path}/${hdfs_dir}"
+                hdfs_file="${g_hdfs_path}/${hdfs_dir}/BeiJing_YiZhuang_CTC_${date_hour}.lzo"
+
+                url="${g_url}/${date_dir}/BeiJing_YiZhuang_CTC_${date_hour}.gz"
+                f_show_info "url" "${url}"
+                f_show_info "hdfs" "${hdfs_file}"
+                f_catch_log "${url}" "${hdfs_file}" "${g_hdfs_dir}"
+
+                hdfs_file="${g_hdfs_path}/${hdfs_dir}/BeiJing_ShangDi_CNC_${date_hour}.lzo"
+                url="${g_url}/${date_dir}/BeiJing_ShangDi_CNC_${date_hour}.gz"
+                f_show_info "url" "${url}"
+                f_show_info "hdfs" "${hdfs_file}"
+                f_catch_log "${url}" "${hdfs_file}" "${g_hdfs_dir}"
+        done
+
+        return $nRet
+}
+
+function f_catch_log()
+{
+        local tmp_name=$( uuidgen | sed 's/-/_/g' )
+        local local_down_file="${g_local_down_path}/${tmp_name}"
+        local local_zip_file="${g_local_zip_path}/${tmp_name}"
+        local local_put_file="${g_local_put_path}/${tmp_name}"
+        local log_url="$1"
+        local hdfs_file="$2"
+        local nRet=0
+
+        if [[ 0 == $nRet ]];then
+                wget -O "${local_down_file}" "${log_url}"
+                nRet=$?
+        fi
+
+        if [[ 0 == $nRet ]];then
+                gzip -cd "${local_down_file}" | lzop -o "${local_zip_file}"
+                nRet=$?
+        fi
+
+#       if [[ 0 == $nRet ]];then
+#               gzip -cd "${local_down_file}" > "${local_zip_file}"
+#               nRet=$?
+#       fi
+
+        if [[ 0 == $nRet ]];then
+                mv "${local_zip_file}" "${local_put_file}"
+                hdfs dfs -mkdir -p "${g_hdfs_dir}"
+                hdfs dfs -put "${local_put_file}" "${hdfs_file}"
+                nRet=$?
+        fi
+
+        if [[ 0 == $nRet ]];then
+                hadoop jar /usr/local/hadoop/lib/native/hadoop-lzo-0.4.20-SNAPSHOT.jar com.hadoop.compression.lzo.LzoIndexer "${hdfs_file}"
+                nRet=$?
+        fi
+
+        rm -rf "${local_down_file}" "${local_put_file}" "${local_zip_file}"
+
+        return $nRet
+}
+
+
+--
+#------------------------------------------------------------------------------------
+# shell begins here
+#
+
+g_local_down_path="/home/hadoop/log_catch/down"
+g_local_zip_path="/home/hadoop/log_catch/zip"
+g_local_put_path="/home/hadoop/log_catch/put"
+
+g_start_date=""
+g_end_date=""
+g_start_hour=0
+g_end_hour=0
+g_hdfs_path=""
+g_url=""
+
+nRet=0
+
+if [[ 0 == $nRet ]];then
+        if [[ $# -ne 6 ]];then
+                f_show_info "cmd format" "sh ./log_catch.sh 'url' 'hdfs_path' 'start_date' 'end_date' 'start_hour' 'end_hour'"
+                nRet=1
+        else
+                g_url="$1"
+                g_hdfs_path="$2"
+                g_start_date="$3"
+                g_end_date="$4"
+                g_start_hour="$5"
+                g_end_hour="$6"
+        fi
+fi
+
+if [[ 0 == $nRet ]];then
+        f_catch_all_day_log
+        nRet=$?
+fi
+
+exit $nRet
+
+----------------------------------------------------------------------------------------
+-- Step 6.2 调用脚本上传数据：
+[hadoop@funshion-hadoop194 ~]$ nohup sh /home/hadoop/datateam/ghh/lab/log_catch_hour_lzo.sh 'http://192.168.116.61:8081/website/pv/2' 'hdfs://mycluster/dw/logs/web/origin/pv/2' 20140524 20140525 0 23 &
+
+
+nohup sh /home/hadoop/datateam/ghh/lab/log_catch_hour_lzo.sh 'http://192.168.116.61:8081/website/pv/2' '/dw/logs/web/origin/pv/2' 20140524 20140525 0 23 &
+
+
+-- nohup sh /home/hadoop/datateam/ghh/lab/log_catch_hour_lzo.sh 'http://192.168.116.61:8081/website/pv/2' 'hdfs://mycluster/dw/logs/web/origin/pv/2' 20140525 20140525 3 23 &
+
+-- 上面这些脚本都是取公司的Oxeye的日志数据。（大家可以忽略此步操作）
+
+-- ################################################################################## --
+-- Step 7. Hive安装(安装到196机器) (使用Hive与HBase整合安装；使用源码编译安装)
+-- (其实应该先安装hbase，再安装hive可能顺序合理一点)
+
+-- 参考：https://cwiki.apache.org/confluence/display/Hive/GettingStarted#GettingStarted-CompileHivePriorto0.13onHadoop23
+         http://www.hadoopor.com/thread-5470-1-1.html
+         http://blog.csdn.net/hguisu/article/details/7282050
+         http://blog.csdn.net/hguisu/article/details/7282050
+         http://www.micmiu.com/bigdata/hive/hive-hbase-integration/
+
+-- 源码下载编译操作如下：
+mkdir -p /opt/software/hive_src
+cd /opt/software/hive_src/
+svn checkout http://svn.apache.org/repos/asf/hive/trunk/ hive_trunk
+cd /opt/software/hive_src/hive_trunk
+
+
+-- 下载以后，我们检查 hive_trunk目录下的pom.xml文件，发现hadoop-23.version这个变量已经引用了hadoop 2.4.1版本，所以，我们可以什么也不用修改，直接用ant去编译：
+<hadoop-23.version>2.4.1</hadoop-23.version>
+
+-- 或者如果发现版本不正确的话，我们可以这样指定参数执行(也可以修改pom.xml文件中对应正确的hadoop、hbase、zookeeper版本）：
+-- 最后我选用的版本相关参数如下：
+    <hadoop-23.version>2.4.1</hadoop-23.version>
+    <hbase.hadoop1.version>0.98.3-hadoop1</hbase.hadoop1.version>
+    <hbase.hadoop2.version>0.98.3-hadoop2</hbase.hadoop2.version>
+    <zookeeper.version>3.4.6</zookeeper.version>
+
+-- 最后，开始编译：
+cd /opt/software/hive_src/hive_trunk
+mvn clean package -DskipTests -Phadoop-2,dist,native -Dtar
+
+[INFO] Hive .............................................. SUCCESS [  6.481 s]
+[INFO] Hive Ant Utilities ................................ SUCCESS [  4.427 s]
+[INFO] Hive Shims Common ................................. SUCCESS [  2.418 s]
+[INFO] Hive Shims 0.20 ................................... SUCCESS [  1.284 s]
+[INFO] Hive Shims Secure Common .......................... SUCCESS [  2.466 s]
+[INFO] Hive Shims 0.20S .................................. SUCCESS [  0.961 s]
+[INFO] Hive Shims 0.23 ................................... SUCCESS [  3.247 s]
+[INFO] Hive Shims ........................................ SUCCESS [  0.364 s]
+[INFO] Hive Common ....................................... SUCCESS [  5.259 s]
+[INFO] Hive Serde ........................................ SUCCESS [  7.428 s]
+[INFO] Hive Metastore .................................... SUCCESS [ 27.000 s]
+[INFO] Hive Query Language ............................... SUCCESS [ 51.924 s]
+[INFO] Hive Service ...................................... SUCCESS [  6.037 s]
+[INFO] Hive JDBC ......................................... SUCCESS [ 14.293 s]
+[INFO] Hive Beeline ...................................... SUCCESS [  1.406 s]
+[INFO] Hive CLI .......................................... SUCCESS [ 10.297 s]
+[INFO] Hive Contrib ...................................... SUCCESS [  1.418 s]
+[INFO] Hive HBase Handler ................................ SUCCESS [ 33.679 s]
+[INFO] Hive HCatalog ..................................... SUCCESS [  0.443 s]
+[INFO] Hive HCatalog Core ................................ SUCCESS [  8.040 s]
+[INFO] Hive HCatalog Pig Adapter ......................... SUCCESS [  1.795 s]
+[INFO] Hive HCatalog Server Extensions ................... SUCCESS [  2.007 s]
+[INFO] Hive HCatalog Webhcat Java Client ................. SUCCESS [  1.548 s]
+[INFO] Hive HCatalog Webhcat ............................. SUCCESS [ 11.718 s]
+[INFO] Hive HCatalog Streaming ........................... SUCCESS [  1.845 s]
+[INFO] Hive HWI .......................................... SUCCESS [  1.246 s]
+[INFO] Hive ODBC ......................................... SUCCESS [  0.626 s]
+[INFO] Hive Shims Aggregator ............................. SUCCESS [  0.192 s]
+[INFO] Hive TestUtils .................................... SUCCESS [  0.324 s]
+[INFO] Hive Packaging .................................... SUCCESS [01:21 min]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 04:53 min
+[INFO] Finished at: 2014-06-22T11:58:05+08:00
+[INFO] Final Memory: 147M/1064M
+[INFO] ------------------------------------------------------------------------
+
+-- 最后，/opt/software/hive_src/hive_trunk/packaging/target　目录下的 apache-hive-0.14.0-SNAPSHOT-bin.tar.gz 文件，就是我们需要的安装包（这个版本还没有正式发布）
+
+----------------------------------------------------------------------------------------
+-- Step 7.1 My SQL安装(安装到194机器)，并在My SQL中创建名为hive的数据库用以存放hive元数据：
+
+-- 安装如下rpm包
+rpm -ivh MySQL-client-5.6.17-1.linux_glibc2.5.x86_64.rpm
+rpm -ivh MySQL-devel-5.6.17-1.linux_glibc2.5.x86_64.rpm
+rpm -ivh MySQL-embedded-5.6.17-1.linux_glibc2.5.x86_64.rpm
+rpm -e --nodeps mysql-libs-5.1.66-2.el6_3.x86_64
+rpm -ivh MySQL-server-5.6.17-1.linux_glibc2.5.x86_64.rpm
+rpm -ivh MySQL-shared-5.6.17-1.linux_glibc2.5.x86_64.rpm
+rpm -ivh MySQL-shared-compat-5.6.17-1.linux_glibc2.5.x86_64.rpm
+rpm -ivh MySQL-test-5.6.17-1.linux_glibc2.5.x86_64.rpm
+
+
+A RANDOM PASSWORD HAS BEEN SET FOR THE MySQL root USER !
+You will find that password in '/root/.mysql_secret'.
+
+You must change that password on your first connect,
+no other statement but 'SET PASSWORD' will be accepted.
+See the manual for the semantics of the 'password expired' flag.
+
+Also, the account for the anonymous user has been removed.
+
+In addition, you can run:
+
+  /usr/bin/mysql_secure_installation
+
+which will also give you the option of removing the test database.
+This is strongly recommended for production servers.
+
+See the manual for more instructions.
+
+Please report any problems at http://bugs.mysql.com/
+
+The latest information about MySQL is available on the web at
+
+  http://www.mysql.com
+
+Support MySQL by buying support/licenses at http://shop.mysql.com
+
+New default config file was created as /usr/my.cnf and
+will be used by default by the server when you start it.
+You may edit this file to change server settings
+
+-- 查看安装生成的root用户随机密码：
+[root@funshion-hadoop194 ~]# more /root/.mysql_secret
+# The random password set for the root user at Mon Jun  9 18:18:48 2014 (local time): QVkyOjwSlAEiPaeT
+
+-- 登录My SQL数据库并修改root密码，并创建名为hive的数据库与用户：
+[root@funshion-hadoop194 ~]# service mysql start
+Starting MySQL... SUCCESS! 
+
+-- 设置mysql服务自启动
+chkconfig mysql on
+
+[root@funshion-hadoop194 ~]# mysql -uroot -pQVkyOjwSlAEiPaeT
+Warning: Using a password on the command line interface can be insecure.
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 1
+Server version: 5.6.17
+
+Copyright (c) 2000, 2014, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> SET PASSWORD = PASSWORD('bee56915');
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> flush privileges;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> CREATE DATABASE `hive` /*!40100 DEFAULT CHARACTER SET utf8 */;
+Query OK, 1 row affected (0.00 sec)
+
+mysql> CREATE USER 'hive'@'funshion-hadoop32' IDENTIFIED BY password('bee56915');
+Query OK, 0 rows affected (0.00 sec)
+
+
+GRANT ALL PRIVILEGES ON hive.* TO 'hive'@'%' Identified by 'bee56915'; 
+GRANT ALL PRIVILEGES ON hive.* TO 'hive'@'localhost' Identified by 'bee56915'; 
+GRANT ALL PRIVILEGES ON hive.* TO 'hive'@'127.0.0.1' Identified by 'bee56915';  
+GRANT ALL PRIVILEGES ON hive.* TO 'hive'@'funshion-hadoop148' Identified by 'bee56915'; 
+GRANT ALL PRIVILEGES ON hive.* TO 'hive'@'funshion-hadoop202' Identified by 'bee56915'; 
+GRANT ALL PRIVILEGES ON hive.* TO 'hive'@'funshion-hadoop203' Identified by 'bee56915'; 
+
+GRANT ALL PRIVILEGES ON corsair_0.* TO 'dbs'@'funshion-hadoop202' Identified by 'R4XBfuptAH'; 
+GRANT ALL PRIVILEGES ON corsair_0.* TO 'dbs'@'192.168.117.202' Identified by 'R4XBfuptAH'; 
+
+flush privileges;
+
+GRANT ALL PRIVILEGES ON hive.* TO 'hive'@'%' Identified by 'bee56915'; 
+GRANT ALL PRIVILEGES ON hive.* TO 'hive'@'localhost' Identified by 'bee56915'; 
+GRANT ALL PRIVILEGES ON hive.* TO 'hive'@'127.0.0.1' Identified by 'bee56915';  
+GRANT ALL PRIVILEGES ON hive.* TO 'hive'@'funshion-hadoop191' Identified by 'bee56915';
+ flush privileges;
+
+----------------------------------------------------------------------------------------
+-- Step 7.2 解决hive安装包到/usr/local下，添加hive相关环境变量：
+[root@funshion-hadoop194 ~]# cd /opt/software
+[root@funshion-hadoop194 software]# ls -l|grep hive
+-rw-r--r--.  1 root root  65662469 May 15 14:04 hive-0.12.0-bin.tar.gz
+[root@funshion-hadoop194 software]# tar -xvf ./hive-0.12.0-bin.tar.gz
+[root@funshion-hadoop194 software]#  mv hive-0.12.0-bin /usr/local
+[root@funshion-hadoop194 software]# cd /usr/local
+[root@funshion-hadoop194 local]# chown -R hadoop.hadoop ./hive-0.12.0-bin
+[root@funshion-hadoop194 local]# ln -s hive-0.12.0-bin hive
+
+[hadoop@funshion-hadoop194 local]$ vi ~/.bash_profile
+export HIVE_HOME=/usr/local/hive
+export PATH=$PATH:$HIVE_HOME/bin
+
+[hadoop@funshion-hadoop194 local]$ source ~/.bash_profile
+
+----------------------------------------------------------------------------------------
+-- Step 7.3 在My SQL数据库的hive数据库中执行创建hive元数据脚本：
+
+[hadoop@funshion-hadoop194 mysql]$ mysql -uroot -pbee56915
+Warning: Using a password on the command line interface can be insecure.
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 3
+Server version: 5.6.17 MySQL Community Server (GPL)
+
+Copyright (c) 2000, 2014, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> use hive;
+Database changed
+mysql> source /usr/local/hive/scripts/metastore/upgrade/mysql/hive-schema-0.14.0.mysql.sql
+
+-- hive 0.12 source /usr/local/hive/scripts/metastore/upgrade/mysql/hive-schema-0.12.0.mysql.sql
+...
+
+mysql> show tables;
++---------------------------+
+| Tables_in_hive            |
++---------------------------+
+| BUCKETING_COLS            |
+| CDS                       |
+| COLUMNS_V2                |
+| DATABASE_PARAMS           |
+| DBS                       |
+| DB_PRIVS                  |
+| DELEGATION_TOKENS         |
+| GLOBAL_PRIVS              |
+| IDXS                      |
+| INDEX_PARAMS              |
+| MASTER_KEYS               |
+| NUCLEUS_TABLES            |
+| PARTITIONS                |
+| PARTITION_EVENTS          |
+| PARTITION_KEYS            |
+| PARTITION_KEY_VALS        |
+| PARTITION_PARAMS          |
+| PART_COL_PRIVS            |
+| PART_COL_STATS            |
+| PART_PRIVS                |
+| ROLES                     |
+| ROLE_MAP                  |
+| SDS                       |
+| SD_PARAMS                 |
+| SEQUENCE_TABLE            |
+| SERDES                    |
+| SERDE_PARAMS              |
+| SKEWED_COL_NAMES          |
+| SKEWED_COL_VALUE_LOC_MAP  |
+| SKEWED_STRING_LIST        |
+| SKEWED_STRING_LIST_VALUES |
+| SKEWED_VALUES             |
+| SORT_COLS                 |
+| TABLE_PARAMS              |
+| TAB_COL_STATS             |
+| TBLS                      |
+| TBL_COL_PRIVS             |
+| TBL_PRIVS                 |
+| TYPES                     |
+| TYPE_FIELDS               |
+| VERSION                   |
++---------------------------+
+41 rows in set (0.00 sec)
+
+mysql> grant all privileges on hive.* to 'hive'@'funshion-hadoop32';
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> flush privileges;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> exit
+Bye
+[hadoop@funshion-hadoop194 mysql]$ 
+
+----------------------------------------------------------------------------------------
+-- Step 7.4 修改hive相关配置文件：
+
+[hadoop@funshion-hadoop194 mysql]$ cd $HIVE_HOME/conf
+[hadoop@funshion-hadoop194 conf]$ ls -l
+total 92
+-rw-rw-r--. 1 hadoop hadoop 81186 Oct 10  2013 hive-default.xml.template
+-rw-rw-r--. 1 hadoop hadoop  2378 Oct 10  2013 hive-env.sh.template
+-rw-rw-r--. 1 hadoop hadoop  2465 Oct 10  2013 hive-exec-log4j.properties.template
+-rw-rw-r--. 1 hadoop hadoop  2870 Oct 10  2013 hive-log4j.properties.template
+
+[hadoop@funshion-hadoop194 conf]$ cp hive-env.sh.template hive-env.sh
+[hadoop@funshion-hadoop194 conf]$ cp hive-default.xml.template hive-site.xml
+
+----------------------------------------
+-- 7.4.1 修改 $HIVE_HOME/bin/hive-config.sh 文件，添加如下环境变量：
+[hadoop@funshion-hadoop194 conf]$ vi $HIVE_HOME/bin/hive-config.sh
+
+export JAVA_HOME=/usr/java/latest
+export HIVE_HOME=/usr/local/hive
+export HADOOP_HOME=/usr/local/hadoop
+
+----------------------------------------
+-- 7.4.2 修改 $HIVE_HOME/conf/hive-site.xml 的第2002行：
+4.4.报错—请修改hive-site.xml:（vi编辑下： /auth）
+
+-- 原值：
+<value>auth</auth>
+
+-- 修改为：
+<value>auth</value>）
+
+----------------------------------------
+-- 7.4.3 修改 $HIVE_HOME/conf/hive-site.xml 的如下property:
+
+-- 7.4.3.1
+-- 原值：
+<property>
+  <name>javax.jdo.option.ConnectionURL</name>
+  <value>jdbc:derby:;databaseName=metastore_db;create=true</value>
+  <description>JDBC connect string for a JDBC metastore</description>
+</property>
+
+-- 修改为：
+<property>
+  <name>javax.jdo.option.ConnectionURL</name>
+  <value>jdbc:mysql://funshion-hadoop194:3306/hive?createDatabaseIfNotExist=true</value>
+  <description>JDBC connect string for a JDBC metastore</description>
+</property>
+
+
+-- 7.4.3.2
+-- 原值：
+<property>
+  <name>javax.jdo.option.ConnectionDriverName</name>
+  <value>org.apache.derby.jdbc.EmbeddedDriver</value>
+  <description>Driver class name for a JDBC metastore</description>
+</property>
+
+-- 修改为：
+<property>
+  <name>javax.jdo.option.ConnectionDriverName</name>
+  <value>com.mysql.jdbc.Driver</value>
+  <description>Driver class name for a JDBC metastore</description>
+</property>
+
+-- 7.4.3.3
+-- 原值：
+<property>
+  <name>javax.jdo.option.ConnectionUserName</name>
+  <value>APP</value>
+  <description>username to use against metastore database</description>
+</property>
+
+-- 修改为：
+<property>
+  <name>javax.jdo.option.ConnectionUserName</name>
+  <value>hive</value>
+  <description>username to use against metastore database</description>
+</property>
+
+
+-- 7.4.3.4
+-- 原值：
+<property>
+  <name>javax.jdo.option.ConnectionPassword</name>
+  <value>mine</value>
+  <description>password to use against metastore database</description>
+</property>
+
+-- 修改为
+<property>
+  <name>javax.jdo.option.ConnectionPassword</name>
+  <value>bee56915</value>
+  <description>password to use against metastore database</description>
+</property>
+
+-- 7.4.3.5
+-- 原值：
+<property>
+  <name>hive.metastore.warehouse.dir</name>
+  <value>/user/hive/warehouse</value>
+  <description>location of default database for the warehouse</description>
+</property>
+
+-- 修改为：
+<property>
+  <name>hive.metastore.warehouse.dir</name>
+  <value>hdfs://mycluster:8020/user/hive/warehouse</value>
+  <description>location of default database for the warehouse</description>
+</property>
+
+-- 7.4.3.6
+-- 原值：
+<property>
+  <name>hive.exec.scratchdir</name>
+  <value>/tmp/hive-${user.name}</value>
+  <description>Scratch space for Hive jobs</description>
+</property>
+
+-- 修改为：
+<property>
+  <name>hive.exec.scratchdir</name>
+  <value>hdfs://mycluster:8020/tmp/hive-${user.name}</value>
+  <description>Scratch space for Hive jobs</description>
+</property>
+
+
+-- 添加：
+<property>
+  <name>hbase.zookeeper.quorum</name>
+  <value>funshion-hadoop194,funshion-hadoop195,funshion-hadoop196,funshion-hadoop197,funshion-hadoop198</value>
+</property>
+
+<property>
+ <name>hive.aux.jars.path</name>
+  <value>
+file:///usr/local/hive/lib/hive-ant-0.14.0-SNAPSHOT.jar,
+file:///usr/local/hive/lib/protobuf-java-2.5.0.jar,
+file:///usr/local/hbase/lib/hbase-server-0.98.3-hadoop2.jar,
+file:///usr/local/hbase/lib/hbase-client-0.98.3-hadoop2.jar,
+file:///usr/local/hbase/lib/hbase-common-0.98.3-hadoop2.jar,
+file:///usr/local/hbase/lib/hbase-common-0.98.3-hadoop2-tests.jar,
+file:///usr/local/hbase/lib/hbase-protocol-0.98.3-hadoop2.jar,
+file:///usr/local/hbase/lib/htrace-core-2.04.jar,
+file:///usr/local/hive/lib/zookeeper-3.4.6.jar,
+file:///usr/local/hive/lib/guava-11.0.2.jar</value>
+</property>
+
+-- 上面格式是方便查看，真正使用下面的格式：将所有的jar包放到一行：
+<property>
+ <name>hive.aux.jars.path</name>
+  <value>file:///usr/local/hive/lib/hive-ant-0.14.0-SNAPSHOT.jar,file:///usr/local/hbase/lib/hbase-server-0.98.3-hadoop2.jar,file:///usr/local/hbase/lib/hbase-client-0.98.3-hadoop2.jar,file:///usr/local/hbase/lib/hbase-common-0.98.3-hadoop2.jar,file:///usr/local/hbase/lib/hbase-common-0.98.3-hadoop2-tests.jar,file:///usr/local/hbase/lib/hbase-protocol-0.98.3-hadoop2.jar,file:///usr/local/hbase/lib/htrace-core-2.04.jar,file:///usr/local/hive/lib/zookeeper-3.4.6.jar</value>
+</property>
+
+-- 首先需要把hive/lib下的hbase包替换成安装的hbase的，需要如下几下：
+hbase-client-0.98.2-hadoop2.jar
+hbase-common-0.98.2-hadoop2.jar
+hbase-common-0.98.2-hadoop2-tests.jar
+hbase-protocol-0.98.2-hadoop2.jar
+htrace-core-2.04.jar
+hbase-server-0.98.2-hadoop2.jar
+
+将hadoop节点添加到hive-site.xml中
+<property>
+<name>hbase.zookeeper.quorum</name>
+
+<vale>所有节点</value>
+
+</property>
+
+
+-- 另外，你必须在创建Hive库表前，在HDFS上创建/tmp和/user/hive/warehouse（也称为hive.metastore.warehouse.dir所指定的目录），并且将它们的权限设置为chmod g+w。完成这个操作的命令如下：
+$ $HADOOP_HOME/bin/hadoop fs -mkdir /tmp
+$ $HADOOP_HOME/bin/hadoop fs -mkdir -p /user/hive/warehouse
+$ $HADOOP_HOME/bin/hadoop fs -chmod g+w /tmp
+$ $HADOOP_HOME/bin/hadoop fs -chmod g+w /user/hive/warehouse
+
+----------------------------------------------------------------------------------------
+-- Step 7.5 启动并登录hive，并创建hive表
+
+14/06/16 18:58:50 WARN conf.HiveConf: DEPRECATED: hive.metastore.ds.retry.* no longer has any effect.  Use hive.hmshandler.retry.* instead
+
+-- 集群启动：
+# bin/hive --service hiveserver -hiveconf hbase.zookeeper.quorum=funshion-hadoop194,funshion-hadoop195,funshion-hadoop196,funshion-hadoop197,funshion-hadoop198 &
+# bin/hive -hiveconf hbase.zookeeper.quorum=funshion-hadoop194,funshion-hadoop195,funshion-hadoop196,funshion-hadoop197,funshion-hadoop198 &
+# bin/hive -hiveconf hive.root.logger=DEBUG,console hbase.master=funshion-hadoop194:60010
+
+# bin/hive -hiveconf hbase.master=funshion-hadoop194:60010 --auxpath /usr/local/hive/lib/hive-ant-0.13.1.jar,/usr/local/hive/lib/protobuf-java-2.5.0.jar,/usr/local/hive/lib/hbase-client-0.98.3-hadoop2.jar, \
+/usr/local/hive/lib/hbase-common-0.98.3-hadoop2.jar,/usr/local/hive/lib/zookeeper-3.4.6.jar,/usr/local/hive/lib/guava-11.0.2.jar
+
+#bin/hive -hiveconf hbase.zookeeper.quorum=node1,node2,node3
+
+-- 客户端登录：
+$HIVE_HOME/bin/hive -h127.0.0.1 -p10000
+$HIVE_HOME/bin/hive -hfunshion-hadoop194 -p10000
+$HIVE_HOME/bin/hive -p10000
+
+[hadoop@funshion-hadoop194 lib]$ hive --service hiveserver & 
+
+[hadoop@funshion-hadoop194 lib]$ hive
+14/06/10 16:56:59 INFO Configuration.deprecation: mapred.input.dir.recursive is deprecated. Instead, use mapreduce.input.fileinputformat.input.dir.recursive
+14/06/10 16:56:59 INFO Configuration.deprecation: mapred.max.split.size is deprecated. Instead, use mapreduce.input.fileinputformat.split.maxsize
+14/06/10 16:56:59 INFO Configuration.deprecation: mapred.min.split.size is deprecated. Instead, use mapreduce.input.fileinputformat.split.minsize
+14/06/10 16:56:59 INFO Configuration.deprecation: mapred.min.split.size.per.rack is deprecated. Instead, use mapreduce.input.fileinputformat.split.minsize.per.rack
+14/06/10 16:56:59 INFO Configuration.deprecation: mapred.min.split.size.per.node is deprecated. Instead, use mapreduce.input.fileinputformat.split.minsize.per.node
+14/06/10 16:56:59 INFO Configuration.deprecation: mapred.reduce.tasks is deprecated. Instead, use mapreduce.job.reduces
+14/06/10 16:56:59 INFO Configuration.deprecation: mapred.reduce.tasks.speculative.execution is deprecated. Instead, use mapreduce.reduce.speculative
+
+Logging initialized using configuration in jar:file:/usr/local/hive-0.12.0-bin/lib/hive-common-0.12.0.jar!/hive-log4j.properties
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/usr/local/hadoop-2.4.0/share/hadoop/common/lib/slf4j-log4j12-1.7.5.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/usr/local/hive-0.12.0-bin/lib/slf4j-log4j12-1.6.1.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+hive> show databases;
+OK
+Failed with exception java.io.IOException:java.io.IOException: Cannot create an instance of InputFormat class org.apache.hadoop.mapred.TextInputFormat as specified in mapredWork!
+
+-- 如果报类似如上错误，在 ~/.bash_profile 添加环境变量，如下：
+
+export JAVA_LIBRARY_PATH=$HADOOP_HOME/lib/native/Linux-amd64-64
+
+export HADOOP_CLASSPATH=$HADOOP_CLASSPATH:$HADOOP_HOME/lib/native/hadoop-lzo-0.4.20-SNAPSHOT.jar
+
+
+export JAVA_LIBRARY_PATH=$HADOOP_HOME/lib/native/Linux-amd64-64
+
+export HADOOP_CLASSPATH=$HADOOP_CLASSPATH:$HADOOP_HOME/lib/hadoop-lzo-0.4.17.jar
+
+-- hive客户端登录：
+[hadoop@funshion-hadoop194 bin]$  $HIVE_HOME/bin/hive -h127.0.0.1 -p10000
+14/06/10 17:13:17 INFO Configuration.deprecation: mapred.input.dir.recursive is deprecated. Instead, use mapreduce.input.fileinputformat.input.dir.recursive
+14/06/10 17:13:17 INFO Configuration.deprecation: mapred.max.split.size is deprecated. Instead, use mapreduce.input.fileinputformat.split.maxsize
+14/06/10 17:13:17 INFO Configuration.deprecation: mapred.min.split.size is deprecated. Instead, use mapreduce.input.fileinputformat.split.minsize
+14/06/10 17:13:17 INFO Configuration.deprecation: mapred.min.split.size.per.rack is deprecated. Instead, use mapreduce.input.fileinputformat.split.minsize.per.rack
+14/06/10 17:13:17 INFO Configuration.deprecation: mapred.min.split.size.per.node is deprecated. Instead, use mapreduce.input.fileinputformat.split.minsize.per.node
+14/06/10 17:13:17 INFO Configuration.deprecation: mapred.reduce.tasks is deprecated. Instead, use mapreduce.job.reduces
+14/06/10 17:13:17 INFO Configuration.deprecation: mapred.reduce.tasks.speculative.execution is deprecated. Instead, use mapreduce.reduce.speculative
+
+Logging initialized using configuration in jar:file:/usr/local/hive-0.12.0-bin/lib/hive-common-0.12.0.jar!/hive-log4j.properties
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/usr/local/hadoop-2.4.0/share/hadoop/common/lib/slf4j-log4j12-1.7.5.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/usr/local/hive-0.12.0-bin/lib/slf4j-log4j12-1.6.1.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+[127.0.0.1:10000] hive> create database web;
+OK
+[127.0.0.1:10000] hive> CREATE EXTERNAL TABLE pv2(
+                      >   protocol string, 
+                      >   rprotocol string, 
+                      >   time int, 
+                      >   ip string, 
+                      >   fck string, 
+                      >   mac string, 
+                      >   userid string, 
+                      >   fpc string, 
+                      >   version string, 
+                      >   sid string, 
+                      >   pvid string, 
+                      >   config string, 
+                      >   url string, 
+                      >   referurl string, 
+                      >   channelid string, 
+                      >   vtime string, 
+                      >   ext string, 
+                      >   useragent string, 
+                      >   step string, 
+                      >   sestep string, 
+                      >   seidcount string, 
+                      >   ta string)
+                      > PARTITIONED BY ( 
+                      >   year string, 
+                      >   month string, 
+                      >   day string,
+                      >   hour string)
+                      > ROW FORMAT DELIMITED 
+                      >   FIELDS TERMINATED BY '\t' 
+                      > STORED AS INPUTFORMAT 
+                      >   'com.hadoop.mapred.DeprecatedLzoTextInputFormat' 
+                      > OUTPUTFORMAT 
+                      >   'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
+                      > LOCATION
+                      >   'hdfs://mycluster/dw/logs/web/origin/pv/2';
+OK
+[127.0.0.1:10000] hive> desc pv2;
+OK
+protocol            	string              	None                
+rprotocol           	string              	None                
+time                	int                 	None                
+ip                  	string              	None                
+fck                 	string              	None                
+mac                 	string              	None                
+userid              	string              	None                
+fpc                 	string              	None                
+version             	string              	None                
+sid                 	string              	None                
+pvid                	string              	None                
+config              	string              	None                
+url                 	string              	None                
+referurl            	string              	None                
+channelid           	string              	None                
+vtime               	string              	None                
+ext                 	string              	None                
+useragent           	string              	None                
+step                	string              	None                
+sestep              	string              	None                
+seidcount           	string              	None                
+ta                  	string              	None                
+year                	string              	None                
+month               	string              	None                
+day                 	string              	None                
+hour                	string              	None                
+	 	 
+# Partition Information	 	 
+# col_name            	data_type           	comment             
+	 	 
+year                	string              	None                
+month               	string              	None                
+day                 	string              	None                
+hour                	string              	None                
+[127.0.0.1:10000] hive>  
+
+-- 创建web数据库后，将发现 hdfs://mycluster/user/hive/warehouse 路径下多了一个web.db文件夹：
+
+[hadoop@funshion-hadoop194 bin]$ hdfs dfs -ls hdfs://mycluster/user/hive/warehouse
+Found 1 items
+drwxr-xr-x   - hadoop supergroup          0 2014-06-10 17:13 hdfs://mycluster/user/hive/warehouse/web.db
+
+
+----------------------------------------------------------------------------------------
+-- Step 7.5 给hive表添加分区
+ALTER TABLE pv2 ADD PARTITION(year = '2014', month = '05', day = '24', hour='00')
+LOCATION 'hdfs://mycluster:8020/dw/logs/web/origin/pv/2/2014/05/24/00';
+
+ALTER TABLE pv2 ADD PARTITION(year = '2014', month = '05', day = '24', hour='01')
+LOCATION 'hdfs://mycluster:8020/dw/logs/web/origin/pv/2/2014/05/24/01';
+
+ALTER TABLE pv2 ADD PARTITION(year = '2014', month = '05', day = '24', hour='02')
+LOCATION 'hdfs://mycluster:8020/dw/logs/web/origin/pv/2/2014/05/24/02';
+
+select * from pv2 limit 10;
+select count(*) from pv2 where year='2014' and month='05' and day='24' and hour='00';
+
+-- ###################################################################################################### --
+
+-------------------------
+-- hbase 源码编译安装参考：
+
+
+-- 同步时钟
+yum install ntpdate
+
+crontab -e
+30 5 * * * cd /usr/sbin;./ntpdate 192.168.111.17>/dev/null
+
+http://www.micmiu.com/bigdata/hbase/hbase-build-for-hadoop2/
+http://blog.chinaunix.net/xmlrpc.php?r=blog/article&id=4212789&uid=9162199
+http://hbase.apache.org/book/configuration.html#ftn.d3246e665
+http://www.myexception.cn/open-source/1472081.html
+
+-- mvn -f pom.xml.hadoop2 install -DskipTests assembly:single -Prelease
+
+select year(to_date(('2011-12-08 10:03:01')) from userinfo limit 1;
+select hour(to_date('2011-12-08_10:03:01')) from userinfo limit 1;
+---------------------------------------------------------------------------------
+2.Hbase Compile
+
+hbase-0.98.3/pom.xml 文件修改hadoop版本 2.2.0 -> 2.4.0
+
+修改如下两个地方：
+tar -xvf 
+-- 1.
+<hadoop-two.version>2.4.0</hadoop-two.version>
+
+-- 2.
+<artifactId>hadoop-common</artifactId>
+
+<version>2.4.0</version>
+
+
+mvn clean package -DskipTests
+但是没有看到有生成包，仔细找资料，获得打包过程。
+hbase可以打包出hadoop1，也可以打包hadoop2，我们需要hadoop2，先生成pom.xml.hadoop2 文件，在打包：
+
+bash ./dev-support/generate-hadoopX-poms.sh 0.98.3 0.98.3-hadoop2
+MAVEN_OPTS="-Xmx3g" mvn -f pom.xml.hadoop2 clean install -DskipTests -Prelease
+MAVEN_OPTS="-Xmx3g" mvn -f pom.xml.hadoop2 install -DskipTests site assembly:single -Prelease
+
+
+10多分钟，编译目录有100多M大小，得到打包文件
+hbase-0.98.1/hbase-assembly/target/hbase-0.98.1-hadoop2-bin.tar.gz
+
+
+-- 出现如下版本信息，表示设置成功：
+
+Downloading: https://repository.apache.org/content/repositories/releases/org/apache/httpcomponents/httpcore/4.2.4/httpcore-4.2.4.pom
+Downloaded: https://repository.apache.org/content/repositories/releases/org/apache/httpcomponents/httpcore/4.2.4/httpcore-4.2.4.pom (6 KB at 0.7 KB/sec)
+Downloading: https://repository.apache.org/content/repositories/releases/org/apache/httpcomponents/httpcomponents-core/4.2.4/httpcomponents-core-4.2.4.pom
+Downloaded: https://repository.apache.org/content/repositories/releases/org/apache/httpcomponents/httpcomponents-core/4.2.4/httpcomponents-core-4.2.4.pom (12 KB at 12.8 KB/sec)
+Downloading: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-mapreduce-client-core/2.4.0/hadoop-mapreduce-client-core-2.4.0.pom
+Downloaded: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-mapreduce-client-core/2.4.0/hadoop-mapreduce-client-core-2.4.0.pom (4 KB at 1.9 KB/sec)
+Downloading: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-mapreduce-client/2.4.0/hadoop-mapreduce-client-2.4.0.pom
+Downloaded: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-mapreduce-client/2.4.0/hadoop-mapreduce-client-2.4.0.pom (7 KB at 5.5 KB/sec)
+Downloading: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-yarn-common/2.4.0/hadoop-yarn-common-2.4.0.pom
+Downloaded: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-yarn-common/2.4.0/hadoop-yarn-common-2.4.0.pom (9 KB at 7.8 KB/sec)
+Downloading: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-yarn/2.4.0/hadoop-yarn-2.4.0.pom
+Downloaded: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-yarn/2.4.0/hadoop-yarn-2.4.0.pom (4 KB at 3.4 KB/sec)
+Downloading: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-yarn-api/2.4.0/hadoop-yarn-api-2.4.0.pom
+Downloaded: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-yarn-api/2.4.0/hadoop-yarn-api-2.4.0.pom (5 KB at 5.1 KB/sec)
+Downloading: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-mapreduce-client-core/2.4.0/hadoop-mapreduce-client-core-2.4.0.jar
+Downloading: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-yarn-common/2.4.0/hadoop-yarn-common-2.4.0.jar
+Downloading: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-yarn-api/2.4.0/hadoop-yarn-api-2.4.0.jar
+Downloaded: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-mapreduce-client-core/2.4.0/hadoop-mapreduce-client-core-2.4.0.jar (1459 KB at 370.7 KB/sec)
+Downloaded: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-yarn-api/2.4.0/hadoop-yarn-api-2.4.0.jar (1601 KB at 367.9 KB/sec)
+Downloaded: https://repository.apache.org/content/repositories/releases/org/apache/hadoop/hadoop-yarn-common/2.4.0/hadoop-yarn-common-2.4.0.jar (1375 KB at 307.4 KB/sec)
+[INFO] 
+
+
+-- vi hbase-site.xml
+
+<configuration>
+        <property>
+                <name>hbase.master</name>
+                <value>funshion-hadoop196:60010</value>
+        </property>
+        <property>
+                <name>hbase.rootdir</name>
+                <value>hdfs://mycluster:8020/user/hbase</value>
+        </property>
+        <property>
+                <name>hbase.cluster.distributed</name>
+                <value>true</value>
+        </property>
+        <property>
+                <name>hbase.zookeeper.property.clientPort</name>
+                <value>2181</value>
+        </property>
+        <property>
+                <name>hbase.zookeeper.quorum</name>
+                <value>funshion-hadoop194,funshion-hadoop195,funshion-hadoop196,funshion-hadoop197,funshion-hadoop198</value>
+        </property>
+        <property>
+                <name>hbase.tmp.dir</name>
+                <value>/home/hadoop/tmp/hbase</value>
+        </property>
+</configuration>
+
+
+-- vi hbase-env.sh
+
+export JAVA_HOME=/usr/java/latest
+
+-- 进funshion-hadoop194(master)
+cd $HBASE_HOME/bin
+./start-hbase.sh
+-- 然后查看HMaster进程是否启动
+[hadoop@funshion-hadoop196 bin]$ jps
+4574 HMaster
+1443 QuorumPeerMain
+3420 NameNode
+3896 ResourceManager
+5134 Jps
+3623 JournalNode
+4972 Main
+3806 DFSZKFailoverController
+
+-- 进其他regionserver节点，查看HRegionServer进程是否启动：
+[hadoop@funshion-hadoop195 logs]$ jps
+1267 QuorumPeerMain
+1964 JournalNode
+2345 Jps
+1891 NameNode
+2089 DFSZKFailoverController
+
+-- 如上所示，没有启动HRegionServer进程，执行以下命令启动HRegionServer进程（其他节点类似）
+./hbase-daemon.sh start regionserver
+
+[hadoop@funshion-hadoop195 bin]$ jps
+2703 Jps
+1267 QuorumPeerMain
+2398 HRegionServer
+1964 JournalNode
+1891 NameNode
+2089 DFSZKFailoverController
+
+-- 如果其他节点的HRegionServer进程无法启动，建议将$HADOOP_HOME/etc/hadoop下的hdfs-site.xml和core-site.xml 放到hbase/conf下
+
+---------------------------------------------------------------------------------
+-- 登录并测试hbase是否能正常使用：
+[hadoop@funshion-hadoop196 logs]$ hbase shell
+2014-06-16 11:03:24,416 INFO  [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available
+2014-06-16 11:03:24,494 INFO  [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available
+2014-06-16 11:03:24,560 INFO  [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available
+2014-06-16 11:03:24,636 INFO  [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available
+2014-06-16 11:03:24,686 INFO  [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available
+HBase Shell; enter 'help<RETURN>' for list of supported commands.
+Type "exit<RETURN>" to leave the HBase Shell
+Version 0.98.3-hadoop2, rUnknown, Thu Jun 12 16:40:37 CST 2014
+
+hbase(main):001:0> status
+4 servers, 0 dead, 0.5000 average load
+
+hbase(main):002:0> create 'testtable','colfam1'
+0 row(s) in 3.4710 seconds
+
+=> Hbase::Table - testtable
+hbase(main):003:0> list 'testtable'
+TABLE                                                                                                                                                                                   
+testtable                                                                                                                                                                               
+1 row(s) in 0.1590 seconds
+
+=> ["testtable"]
+hbase(main):004:0> put 'testtable','myrow-1','colfam1:q1','value-1'
+0 row(s) in 0.4770 seconds
+
+hbase(main):005:0> put 'testtable','myrow-2','colfam1:q2','value-2'
+0 row(s) in 0.0440 seconds
+
+hbase(main):006:0> put 'testtable','myrow-2','colfam1:q3','value-3'
+0 row(s) in 0.0370 seconds
+
+hbase(main):007:0> scan 'testtable'
+ROW                                             COLUMN+CELL                                                                                                                             
+ myrow-1                                        column=colfam1:q1, timestamp=1402888334639, value=value-1                                                                               
+ myrow-2                                        column=colfam1:q2, timestamp=1402888343658, value=value-2                                                                               
+ myrow-2                                        column=colfam1:q3, timestamp=1402888350278, value=value-3                                                                               
+2 row(s) in 0.2360 seconds
+
+hbase(main):008:0> get 'testtable','myrow-1'
+COLUMN                                          CELL                                                                                                                                    
+ colfam1:q1                                     timestamp=1402888334639, value=value-1                                                                                                  
+1 row(s) in 0.1040 seconds
+
+hbase(main):009:0> delete 'testtable','myrow-2','colfam1:q2'
+0 row(s) in 0.1320 seconds
+
+hbase(main):010:0> scan 'testtable'
+ROW                                             COLUMN+CELL                                                                                                                             
+ myrow-1                                        column=colfam1:q1, timestamp=1402888334639, value=value-1                                                                               
+ myrow-2                                        column=colfam1:q3, timestamp=1402888350278, value=value-3                                                                               
+2 row(s) in 0.0650 seconds
+
+hbase(main):012:0> disable 'testtable'
+0 row(s) in 1.8050 seconds
+
+hbase(main):013:0> drop 'testtable'
+0 row(s) in 0.7200 seconds
+
+hbase(main):014:0> exit
+[hadoop@funshion-hadoop194 logs]$
+
+
+-- 安装后的URL：http://funshion-hadoop196:60010/master-status
+
+-- ###################################################################################################### --
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<property>
+    <name>yarn.resourcemanager.resource-tracker.address</name>
+    <value>master-hadoop:58031</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.address</name>
+    <value>master-hadoop:58032</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.scheduler.address</name>
+    <value>master-hadoop:58030</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.admin.address</name>
+    <value>master-hadoop:58033</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.webapp.address</name>
+    <value>master-hadoop:58088</value>
+  </property>
+  <property>
+    <description>Classpath for typical applications.</description>
+    <name>yarn.application.classpath</name>
+    <value>
+        $HADOOP_CONF_DIR,
+        $HADOOP_COMMON_HOME/*,$HADOOP_COMMON_HOME/lib/*,
+        $HADOOP_HDFS_HOME/*,$HADOOP_HDFS_HOME/lib/*,
+        $HADOOP_MAPRED_HOME/*,$HADOOP_MAPRED_HOME/lib/*,
+        $YARN_HOME/*,$YARN_HOME/lib/*
+    </value>
+  </property>
+  <property>
+    <name>yarn.nodemanager.aux-services</name>
+    <value>mapreduce_shuffle</value>
+  </property>
+  <property>
+    <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+    <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+  </property>
+  <property>
+    <name>yarn.nodemanager.local-dirs</name>
+    <value>/var/lib/hadoop/dfs/yarn/local</value>
+  </property>
+  <property>
+    <name>yarn.nodemanager.log-dirs</name>
+    <value>/var/lib/hadoop/dfs/yarn/logs</value>
+  </property>
+  <property>
+    <description>Where to aggregate logs</description>
+    <name>yarn.nodemanager.remote-app-log-dir</name>
+    <value>/var/lib/hadoop/dfs/yarn/remotelogs</value>
+  </property>
+  <property>
+    <name>yarn.app.mapreduce.am.staging-dir</name>
+    <value>/var/lib/hadoop/dfs/yarn/userstag</value>
+  </property>
+  <property>
+    <name>mapreduce.jobhistory.intermediate-done-dir</name>
+    <value>/var/lib/hadoop/dfs/yarn/intermediatedone</value>
+  </property>
+  <property>
+    <name>mapreduce.jobhistory.done-dir</name>
+    <value>/var/lib/hadoop/dfs/yarn/done</value>
+  </property>
+  <property>
+    <name>yarn.log-aggregation-enable</name>
+    <value>true</value>
+  </property>
+
+---------------------------
+<property>
+    <description>Classpath for typical applications.</description>
+    <name>yarn.application.classpath</name>
+    <value>
+        $HADOOP_CONF_DIR,
+        $HADOOP_COMMON_HOME/*,$HADOOP_COMMON_HOME/lib/*,
+        $HADOOP_HDFS_HOME/*,$HADOOP_HDFS_HOME/lib/*,
+        $HADOOP_MAPRED_HOME/*,$HADOOP_MAPRED_HOME/lib/*,
+        $YARN_HOME/*,$YARN_HOME/lib/*
+    </value>
+  </property>
+这个有没有必要配置
+
+
+-- hadoop reformat
+
+rm -rf ~/mydata/*
+rm -rf ~/mycluster/*
+rm -rf /usr/local/zookeeper/var/data/zookeeper*
+rm -rf /usr/local/zookeeper/var/data/ver*
+rm -rf /usr/local/zookeeper/var/datalog/*
+rm -rf /tmp/hadoop*
+rm -rf /tmp/hbase*
+rm -rf /tmp/hive*
+rm -rf /tmp/yarn*
+rm -rf ~/tmp/*
+rm -rf ~/logs/*
+mkdir -p /home/hadoop/logs/yarn_local
+mkdir -p /home/hadoop/logs/yarn_log
+mkdir -p /home/hadoop/logs/yarn_remotelog
+mkdir -p /home/hadoop/logs/yarn_userstag
+mkdir -p /home/hadoop/logs/yarn_intermediatedone
+mkdir -p /home/hadoop/logs/yarn_done
+
+	<property>
+		<name>yarn.nodemanager.local-dirs</name>
+		<value>/home/hadoop/logs/yarn_local</value>
+	</property>
+	<property>
+		<name>yarn.nodemanager.log-dirs</name>
+		<value>/home/hadoop/logs/yarn_log</value>
+	</property>
+	<property>
+		<name>yarn.nodemanager.remote-app-log-dir</name>
+		<value>/home/hadoop/logs/yarn_remotelog</value>
+	</property>
+	<property>
+		<name>yarn.app.mapreduce.am.staging-dir</name>
+		<value>/home/hadoop/logs/yarn_userstag</value>
+	</property>
+	<property>
+		<name>mapreduce.jobhistory.intermediate-done-dir</name>
+		<value>/home/hadoop/logs/yarn_intermediatedone</value>
+	</property>
+	<property>
+		<name>mapreduce.jobhistory.done-dir</name>
+		<value>/var/lib/hadoop/dfs/yarn_done</value>
+	</property>
+
+
+vi /usr/local/zookeeper/var/data/myid
+
+
+-- hadoop、hbase、hive启动后，最后namenode节点应该有如下相关进程（如果另外一个namenode节点无ResourceManager，可以手动去启动一下)：
+[hadoop@funshion-hadoop194 bin]$ jps
+
+25583 JournalNode            -- JournalNode进程（每个节点都有）
+21911 QuorumPeerMain          -- Zookeeper相关进程(每个节点都有）
+25380 NameNode                -- hadoop namenode进程(两个namenode节点均有）
+26261 HMaster                 -- Hbase Master进程(只有Hbase Master节点有)
+25860 ResourceManager         -- Hadoop 的 ResourceManager进程(两个namenode节点均有）
+25769 DFSZKFailoverController -- Hadoop的故障自动转移相关进程（就靠它在故障的时候干活了，两个namenode节点均有）
+
+
+-- hadoop、hbase、hive启动后，最后datanode节点有如下相关进程：
+
+[hadoop@funshion-hadoop195 ~]$ jps
+32090 HRegionServer
+31854 JournalNode
+31781 NameNode
+31978 DFSZKFailoverController
+32189 Jps
+30808 QuorumPeerMain
+
+-- 安装后相关的URL：
+
+-- HADOOP集群：
+http://funshion-hadoop194:23188/cluster
+
+-- Hbase集群：
+http://funshion-hadoop196:60010/master-status
+
+
+
+
+
+# export HADOOP_MAPARED_HOME=${HADOOP_DEV_HOME}
+# export HADOOP_COMMON_HOME=${HADOOP_DEV_HOME}
+# export HADOOP_HDFS_HOME=${HADOOP_DEV_HOME}
+# export YARN_HOME=${HADOOP_DEV_HOME}
+# export HADOOP_CONF_DIR=${HADOOP_DEV_HOME}/etc/hadoop
+# export HDFS_CONF_DIR=${HADOOP_DEV_HOME}/etc/hadoop
+# export YARN_CONF_DIR=${HADOOP_DEV_HOME}/etc/hadoop
+
+export HADOOP_MAPARED_HOME=${HADOOP_DEV_HOME}/share/hadoop/mapreduce
+export HADOOP_COMMON_HOME=${HADOOP_DEV_HOME}/share/hadoop/common
+export HADOOP_HDFS_HOME=${HADOOP_DEV_HOME}/share/hadoop/hdfs
+export YARN_HOME=${HADOOP_DEV_HOME}/share/hadoop/yarn
+export HADOOP_YARN_HOME=${HADOOP_DEV_HOME}/share/hadoop/yarn
+export HADOOP_CLIENT_CONF_DIR=${HADOOP_DEV_HOME}/etc/hadoop
+export HADOOP_CONF_DIR=${HADOOP_DEV_HOME}/etc/hadoop
+export HDFS_CONF_DIR=${HADOOP_DEV_HOME}/etc/hadoop
+export YARN_CONF_DIR=${HADOOP_DEV_HOME}/etc/hadoop
+
+ncing is necessary
+2014-06-20 11:49:37,137 INFO org.apache.hadoop.ha.ActiveStandbyElector: Yielding from election
+2014-06-20 11:49:37,168 INFO org.apache.zookeeper.ZooKeeper: Session: 0x146b75b9d960000 closed
+2014-06-20 11:49:37,169 WARN org.apache.hadoop.ha.ActiveStandbyElector: Ignoring stale result from old client with sessionId 0x146b75b9d960000
+2014-06-20 11:49:37,169 INFO org.apache.zookeeper.ClientCnxn: EventThread shut down
+2014-06-20 11:49:39,180 INFO org.apache.hadoop.ipc.Client: Retrying connect to server: funshion-hadoop195/192.168.117.195:53310. Already tried 0 time(s); retry policy is RetryUpToMaximumCountWithFixedSleep(maxRetries=1, sleepTime=1000 MILLISECONDS)
+2014-06-20 11:49:39,183 WARN org.apache.hadoop.ha.HealthMonitor: Transport-level exception trying to monitor health of NameNode at funshion-hadoop195/192.168.117.195:53310: Call From funshion-hadoop195/192.168.117.195 to funshion-hadoop195:53310 failed on connection exception: java.net.ConnectException: Connection refused; For more details see:  http://wiki.apache.org/hadoop/ConnectionRefused
+2014-06-20 11:49:41,188 INFO org.apache.hadoop.ipc.Client: Retrying connect to server: funshion-hadoop195/192.168.117.195:53310. Already tried 0 time(s); retry policy is RetryUpToMaximumCountWithFixedSleep(maxRetries=1, sleepTime=1000 MILLISECONDS)
+2014-06-20 11:49:41,191 WARN org.apache.hadoop.ha.HealthMonitor: Transport-level exception trying to monitor health of NameNode at funshion-hadoop195/192.168.117.195:53310: Call From funshion-hadoop195/192.168.117.195 to funshion-hadoop195:53310 failed on connection exception: java.net.ConnectException: Connection refused; For more details see:  http://wiki.apache.org/hadoop/ConnectionRefused
+
+-- #################################################################################################################### --
+-- 最后，测试hive与hbase整合是否成功：
+
+1、先在hive中创建hbase表：
+[hadoop@funshion-hadoop196 ~]$ hive
+
+Logging initialized using configuration in jar:file:/usr/local/apache-hive-0.14.0-SNAPSHOT-bin/lib/hive-common-0.14.0-SNAPSHOT.jar!/hive-log4j.properties
+hive (default)> use web;
+OK
+Time taken: 0.813 seconds
+hive (web)> CREATE TABLE hive_table_1(key int, value string)
+          > STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+          > WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,id:1") TBLPROPERTIES ("hbase.table.name"="hive_table_1");
+OK
+Time taken: 4.471 seconds
+hive (web)> desc hive_table_1;
+OK
+key                 	int                 	from deserializer   
+value               	string              	from deserializer   
+Time taken: 0.605 seconds, Fetched: 2 row(s)
+
+2、然后在hbase查看表 hive_table_1 是否存在，并插入一行数据：
+[hadoop@funshion-hadoop196 ~]$ hbase shell
+2014-06-22 13:19:35,775 INFO  [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available
+2014-06-22 13:19:35,865 INFO  [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available
+2014-06-22 13:19:35,955 INFO  [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available
+2014-06-22 13:19:36,028 INFO  [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available
+2014-06-22 13:19:36,120 INFO  [main] Configuration.deprecation: hadoop.native.lib is deprecated. Instead, use io.native.lib.available
+HBase Shell; enter 'help<RETURN>' for list of supported commands.
+Type "exit<RETURN>" to leave the HBase Shell
+Version 0.98.3-hadoop2, rUnknown, Thu Jun 12 16:40:37 CST 2014
+
+hbase(main):001:0> status
+2014-06-22 13:19:42,761 WARN  [main] util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+3 servers, 1 dead, 1.3333 average load
+
+hbase(main):002:0> satus
+NameError: undefined local variable or method `satus' for #<Object:0x2dbb822>
+
+hbase(main):003:0> status
+4 servers, 0 dead, 1.0000 average load
+
+hbase(main):004:0> list
+TABLE                                                                                                                                                                           
+hive_table_1                                                                                                                                                                    
+testtable                                                                                                                                                                       
+2 row(s) in 0.2430 seconds
+
+=> ["hive_table_1", "testtable"]
+hbase(main):005:0> put 'hive_table_1', "1", "id:1", "1"
+0 row(s) in 0.8620 seconds
+
+3、然后在hive中查询，看是否能访问到表数据：
+hive (web)> select * from hive_table_1;
+OK
+1	1
+Time taken: 0.761 seconds, Fetched: 1 row(s)
+
+
+
+http://www.cnblogs.com/blfshiye/p/3789872.html
+
+
+
+
+

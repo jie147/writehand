@@ -1,0 +1,10 @@
+1). 加载 BIOS 的硬件信息； 
+2). 读取 MBR 的 Kernel Loader (亦即是 lilo, grub, spfdisk 等等)开机信息； 
+3). 加载 Kernel 的操作系统核心信息； 
+4). Kernel 执行 init 程序并取得 run-level 信息； 
+5). init 执行 /etc/rc.d/rc.sysinit 档案； 
+6). 启动核心的外挂式模块 (/etc/modules.conf)； 
+7). init 执行 run-level 的各个批次档( Scripts )； 
+8). init 执行 /etc/rc.d/rc.local 档案； 
+9). 执行 /bin/login 程序； 
+10). 登入之后开始以 Shell 控管主机。

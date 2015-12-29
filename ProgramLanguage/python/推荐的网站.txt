@@ -1,0 +1,19 @@
+http://codingbat.com/
+
+https://code.he.net/
+
+http://www.pyschools.com/
+
+http://www.tutorialspoint.com/python/ (有类似W3Schools的Try It功能)
+
+PythonMonk - Interactive Python tutorials
+
+http://www.learnpython.org/
+
+这个更要推荐——
+LEARN programming by visualizing code execution：
+http://www.pythontutor.com/
+
+
+以上。。其实我都没怎么用过。。。。有需要在线学习么？
+看电子书，然后自己在shell里运行、写代码跑一遍不也一样么？体验还更佳。

@@ -1,0 +1,5 @@
+umount /dev/sdc4    //sdc4是我的U盘设备，不同机器可能不一样，可用"ls /dev |grep sd*"查看一下。
+mkdir /mnt/usb      
+mount -t vfat /dev/sdc4 /mnt/usb //将U盘挂载到这个文件夹下
+cd /mnt/usb
+mount -t iso9660 -o loop ubuntu-12.04-server-i386.iso /cdrom //挂载iso文件

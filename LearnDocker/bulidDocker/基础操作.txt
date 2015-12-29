@@ -1,0 +1,15 @@
+创建容器：
+$ sudo docker run -t -i ubuntu:14.04 /bin/bash
+root@af8bae53bdd3:/#
+其中，-t 选项让Docker分配一个伪终端（pseudo-tty）并绑定到容器的标准输入上， -i 则让容器的标准输入保持打开。
+
+
+数据卷：
+使用 -v 标记也可以指定挂载一个本地主机的目录到容器中去。
+$ sudo docker run -d -P --name web -v /src/webapp:/opt/webapp training/webapp python app.py
+上面的命令加载主机的 /src/webapp 目录到容器的 /opt/webapp 目录。这个功能在进行测试的时候十分方便，比如用户可以放置一些程序到本地目录中，来查看容器是否正常工作。本地目录的路径必须是绝对路径，如果目录不存在 Docker 会自动为你创建它。
+
+Docker 挂载数据卷的默认权限是读写，用户也可以通过 :ro 指定为只读。
+$ sudo docker run -d -P --name web -v /src/webapp:/opt/webapp:ro
+training/webapp python app.py
+加了 :ro 之后，就挂载为只读了。

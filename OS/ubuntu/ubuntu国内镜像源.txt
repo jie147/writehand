@@ -1,0 +1,35 @@
+本来介绍ubuntu国内镜像的文章一大堆，但是都过期了，因此在总结下。
+
+国内的镜像牛b的就是网易和搜狐了，其他的都倒闭的差不多了，所以强烈推荐使用网易：
+
+编辑/etc/apt/sources.list文件, 在文件最前面添加以下条目：
+
+Shell
+
+ deb http://mirrors.163.com/ubuntu/ precise main restricted universe multiverse
+ deb http://mirrors.163.com/ubuntu/ precise-security main restricted universe multiverse
+ deb http://mirrors.163.com/ubuntu/ precise-updates main restricted universe multiverse
+ deb http://mirrors.163.com/ubuntu/ precise-proposed main restricted universe multiverse
+ deb http://mirrors.163.com/ubuntu/ precise-backports main restricted universe multiverse
+ deb-src http://mirrors.163.com/ubuntu/ precise main restricted universe multiverse
+ deb-src http://mirrors.163.com/ubuntu/ precise-security main restricted universe multiverse
+ deb-src http://mirrors.163.com/ubuntu/ precise-updates main restricted universe multiverse
+ deb-src http://mirrors.163.com/ubuntu/ precise-proposed main restricted universe multiverse
+ deb-src http://mirrors.163.com/ubuntu/ precise-backports main restricted universe multiverse
+网易源的帮助请点击这里：http://mirrors.163.com/.help/ubuntu.html
+
+搜狐源：
+
+Shell
+
+ deb http://mirrors.sohu.com/ubuntu/ raring main restricted universe multiverse
+ deb http://mirrors.sohu.com/ubuntu/ raring-security main restricted universe multiverse
+ deb http://mirrors.sohu.com/ubuntu/ raring-updates main restricted universe multiverse
+ deb http://mirrors.sohu.com/ubuntu/ raring-proposed main restricted universe multiverse
+ deb http://mirrors.sohu.com/ubuntu/ raring-backports main restricted universe multiverse
+ deb-src http://mirrors.sohu.com/ubuntu/ raring main restricted universe multiverse
+ deb-src http://mirrors.sohu.com/ubuntu/ raring-security main restricted universe multiverse
+ deb-src http://mirrors.sohu.com/ubuntu/ raring-updates main restricted universe multiverse
+ deb-src http://mirrors.sohu.com/ubuntu/ raring-proposed main restricted universe multiverse
+ deb-src http://mirrors.sohu.com/ubuntu/ raring-backports main restricted universe multiverse
+ubuntu官网的介绍请看这里：点击前往

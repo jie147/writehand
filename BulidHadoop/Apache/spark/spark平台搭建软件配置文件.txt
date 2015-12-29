@@ -1,0 +1,20 @@
+#set spark environment
+export SPARK_HOME=/usr/program/spark/spark-1.4.1-bin-hadoop2.6
+export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
+
+#set scala environment
+export SCALA_HOME=/usr/program/scala/scala-2.11.7
+export PATH=$PATH:$SCALA_HOME/bin
+
+#set java environment
+export JAVA_HOME=/usr/lib/jvm/jdk1.8.0_51  
+export JRE_HOME=${JAVA_HOME}/jre  
+export CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib  
+export PATH=${JAVA_HOME}/bin:$PATH
+
+#set hadoop environment
+export HADOOP_HOME=/usr/program/hadoop/hadoop-2.6.0
+export PATH=$PATH:$HADOOP_HOME/bin
+export HADOOP_HOME_WARN_SUPPRESS=not_null
+
+export SPARK_JAR=/usr/local/program/spark/spark-1.1.0-bin-hadoop2.4/lib/spark-assembly-1.1.0-hadoop2.4.0.jar

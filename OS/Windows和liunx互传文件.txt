@@ -1,0 +1,11 @@
+windows和liunx互传文件命令
+
+从windows向liunx传文件：
+打开cmd窗口，输入命令：
+pscp 源文件路径 root@hostIp:目的路径
+如将aaa.jpg传到/home下，则：  
+pscp aaa.jpg root@192.168.0.101:/home
+
+从linux向windows传文件：
+在windows的cmd中输入  pscp root@hostIp: linux中源文件路径windows中目的路径
+如：   pscp root@192.168.0.100:/home/aaa.jpg  G:/putty/

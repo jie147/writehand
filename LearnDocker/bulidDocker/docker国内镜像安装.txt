@@ -1,0 +1,4 @@
+docker安装（国内镜像安装）
+推荐网址：http://help.daocloud.io/tutorials/index.html
+命令：
+	curl -sSL https://get.daocloud.io/docker | sh

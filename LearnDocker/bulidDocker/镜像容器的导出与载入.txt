@@ -1,0 +1,7 @@
+µ¼³ö¾µÏñ£º	sudo docker save -o ubuntu_14.04.tar ubuntu:14.04
+ÔØÈë¾µÏñ£º	sudo docker load --input ubuntu_14.04.tar
+		sudo docker load < ubuntu_14.04.tar
+
+µ¼³öÈİÆ÷£º	sudo docker export 7691a814370e > ubuntu.tar
+ÔØÈëÈİÆ÷¾µÏñ£º	cat ubuntu.tar | sudo docker import - test/ubuntu:v1.0
+		sudo docker import http://example.com/exampleimage.tgz example/imagerepo
