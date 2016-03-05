@@ -1,9 +1,9 @@
-¸öÈË±Ê¼Ç
-·ÖÀà¹æÔòÈçÏÂ£º
-	°´ÕÕÑ§Ï°ÄÚÈİ·ÖÀà£º	
-		MachineLearning		»úÆ÷Ñ§Ï°
-		BuildHadoop			Hadoop¼¯Èº´î½¨£¬ÆäÖĞ°üpig£¬hadoop£¬sparkµÈ´î½¨µÄÄÚÈİ
-		LearnHadoop			¶ÔhadoopÏà¹ØÖªÊ¶µÄÑ§Ï°
-		LearnDocker			dockerÏà¹Ø·½ÃæµÄÑ§Ï°
+ä¸ªäººç¬”è®°
+åˆ†ç±»è§„åˆ™å¦‚ä¸‹ï¼š
+	æŒ‰ç…§å­¦ä¹ å†…å®¹åˆ†ç±»ï¼š	
+		MachineLearning		æœºå™¨å­¦ä¹ 
+		BuildHadoop			Hadoopé›†ç¾¤æ­å»ºï¼Œå…¶ä¸­åŒ…pigï¼Œhadoopï¼Œsparkç­‰æ­å»ºçš„å†…å®¹
+		LearnHadoop			å¯¹hadoopç›¸å…³çŸ¥è¯†çš„å­¦ä¹ 
+		LearnDocker			dockerç›¸å…³æ–¹é¢çš„å­¦ä¹ 
 		
 		
